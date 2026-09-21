@@ -237,9 +237,8 @@ describe('setModeBanner', () => {
     refs = queryRefs(document)
   })
 
-  const COPY: Record<RunMode, string> = {
+  const COPY: Record<'sample' | 'byo', string> = {
     sample: 'Sample run — add keys for live LLM and Jev',
-    live: 'Live run via Worker proxy',
     byo: 'Live run with your local keys',
   }
 
@@ -251,6 +250,14 @@ describe('setModeBanner', () => {
       expect(refs.banner.hidden).toBe(false)
     })
   }
+
+  it('says nothing at all for a hosted live run', () => {
+    setModeBanner(refs, 'sample')
+    setModeBanner(refs, 'live')
+
+    expect(refs.banner.textContent).toBe('')
+    expect(refs.banner.hidden).toBe(true)
+  })
 
   it('appends a fallback reason in parentheses', () => {
     setModeBanner(refs, 'sample', 'quota exceeded')

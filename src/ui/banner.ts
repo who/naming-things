@@ -14,14 +14,21 @@ import type { RunMode } from '../core/types'
 import type { UiRefs } from './dom'
 
 /**
- * What each mode tells the visitor.
+ * What each mode tells the visitor, or nothing when it has nothing to say.
  *
  * Sample mode names the way out, because a visitor who cannot tell canned
  * answers from live ones will read one fixed disagreement as the whole demo.
+ * Byo names whose quota is being spent, which is the one thing separating it
+ * from the hosted run.
+ *
+ * The hosted live run is the page working as intended, and a strip announcing
+ * that is furniture: it tells a visitor nothing they can act on, and takes the
+ * space directly above the answers to say it. So live carries no copy, and a
+ * clean live run shows no bar at all.
  */
-const MODE_COPY: Record<RunMode, string> = {
+const MODE_COPY: Record<RunMode, string | null> = {
   sample: 'Sample run — add keys for live LLM and Jev',
-  live: 'Live run via Worker proxy',
+  live: null,
   byo: 'Live run with your local keys',
 }
 
@@ -51,9 +58,20 @@ const GENERIC_ERROR = 'That run could not finish. Try again in a moment.'
  * error" — not raw transport text, because it is appended to fixed copy and
  * shown verbatim. It is what separates a live run stopped by a quota from one
  * stopped by an outage, which is a distinction a visitor can act on.
+ *
+ * A mode with no copy takes the strip back down rather than leaving an empty
+ * one, and nothing is lost with it: a run that has a reason to report has
+ * already dropped to the canned answers, and is announced as sample.
  */
 export function setModeBanner(refs: UiRefs, mode: RunMode, reason?: string): void {
   const copy = MODE_COPY[mode]
+
+  if (copy === null) {
+    refs.banner.textContent = ''
+    refs.banner.hidden = true
+
+    return
+  }
 
   refs.banner.textContent = reason === undefined ? copy : `${copy} (${reason})`
   refs.banner.hidden = false
