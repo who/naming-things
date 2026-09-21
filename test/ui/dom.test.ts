@@ -76,12 +76,17 @@ describe('bootstrap', () => {
 
     refs.randomize.click()
 
+    // The new brief and the button coming back are written in different turns:
+    // the swap lands in the `then`, the re-enable in the `finally` behind it. A
+    // wait on the value alone therefore reads the button mid-click, so both go
+    // in the same wait. A Randomize that never re-enables still fails here, on
+    // a wait that runs out rather than on a single early look.
     await vi.waitFor(() => {
       expect(refs.descriptor.value).not.toBe(before)
+      expect(refs.randomize.disabled).toBe(false)
     })
 
     expect(DESCRIPTOR_BANK).toContain(refs.descriptor.value)
-    expect(refs.randomize.disabled).toBe(false)
   })
 
   // The border is a stylesheet's business; what has to hold here is that the
