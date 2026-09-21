@@ -14,7 +14,7 @@ descriptor ──► five candidates + tiny interface sketch
 Sample mode needs **no keys**. Live mode goes through a Cloudflare Worker that holds secrets.
 
 - Live Worker: `https://naming-things.who-cf.workers.dev`
-- Pages (when enabled): `https://who.github.io/naming-things/`
+- Live demo: `https://who.github.io/naming-things/`
 
 Pinned models: `claude-haiku-4-5-20251001` · `jev-1.13.0`
 
@@ -182,7 +182,7 @@ push main
   → https://who.github.io/naming-things/
 ```
 
-Enable: repo **Settings → Pages → Source → GitHub Actions**.
+A fork enables its own copy under repo **Settings → Pages → Source → GitHub Actions**.
 
 Optional build env (URL only — never a key):
 
