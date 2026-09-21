@@ -47,6 +47,28 @@ cp -rf source dest          # NOT: cp -r source dest
 - `apt-get` - use `-y` flag
 - `brew` - use `HOMEBREW_NO_AUTO_UPDATE=1` env var
 
+## CodeGraph Index Maintenance
+
+`.codegraph/` is machine-local and gitignored, so each clone builds its own
+graph with `codegraph init`. Updates after that are incremental, and the file
+watcher is off in headless runs, so an index can fall behind a subtree added
+after it was built. `worker/` did exactly that: `codegraph explore` and the
+`codegraph_explore` MCP tool answered `src/` and `test/` queries normally while
+reporting no match for the Worker's own symbols.
+
+Under this repo's `codegraph = "required"` policy that is a stop, not a licence
+to fall back to grep. When a query cannot find code you know is committed,
+rebuild the whole graph and confirm the paths landed:
+
+```bash
+codegraph index    # full rebuild from scratch
+codegraph files    # the indexed tree, to check the new paths are in it
+```
+
+The rebuild covers the whole tree, so existing coverage returns with it, and a
+daemon serving the previous database reopens the replacement in place — there
+is nothing to restart.
+
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:46cd31e7 -->
 ## Beads Issue Tracker
 
