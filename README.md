@@ -13,7 +13,7 @@ descriptor ──► five candidates + tiny interface sketch
 
 Sample mode needs **no keys**. Live mode goes through a Cloudflare Worker that holds secrets.
 
-- Live Worker: `https://naming-things.andybird.workers.dev`
+- Live Worker: `https://naming-things.who-cf.workers.dev`
 - Pages (when enabled): `https://who.github.io/naming-things/`
 
 Pinned models: `claude-haiku-4-5-20251001` · `jev-1.13.0`
@@ -142,7 +142,7 @@ npx wrangler secret put TYPESAFE_API_KEY
 Health check (no quota cost):
 
 ```bash
-curl https://naming-things.andybird.workers.dev/api/health
+curl https://naming-things.who-cf.workers.dev/api/health
 # {"ok":true,"hasTypeSafe":true,"hasAnthropic":true,...}
 ```
 
@@ -187,7 +187,7 @@ Enable: repo **Settings → Pages → Source → GitHub Actions**.
 Optional build env (URL only — never a key):
 
 ```text
-VITE_API_BASE=https://naming-things.andybird.workers.dev
+VITE_API_BASE=https://naming-things.who-cf.workers.dev
 ```
 
 ### Worker
