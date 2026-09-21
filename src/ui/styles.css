@@ -263,6 +263,40 @@ button.accent-jev:not(:disabled) {
   border-radius: var(--radius);
 }
 
+/*
+ * Casing, taste and the three weights are a second conversation. A first run
+ * needs the brief and the three buttons above it and nothing else, so the rest
+ * sits behind a native disclosure that starts closed: `details` already knows
+ * how to be opened from the keyboard and how to tell a screen reader whether it
+ * is open, which a button and a hidden panel would have to be taught.
+ *
+ * Closed is a presentation state, not an absence. The controls mount into this
+ * panel at startup whether or not anyone opens it, so a weight moved and then
+ * folded away is still the weight a later run is sent.
+ */
+.advanced-options {
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+}
+
+/* Reads as one more of the column's small uppercase labels, because that is
+   what it is standing in for while it is closed. */
+.advanced-summary {
+  color: var(--ink-dim);
+  cursor: pointer;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The gap belongs to the open panel: a closed disclosure is one line and has
+   nothing to be spaced away from. */
+.advanced-options[open] .val-controls {
+  margin-top: 0.6rem;
+}
+
 .val-controls {
   display: flex;
   flex-direction: column;
