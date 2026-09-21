@@ -26,6 +26,17 @@ const MODE_COPY: Record<RunMode, string> = {
 }
 
 /**
+ * What a canned run owes a visitor who asked about something else.
+ *
+ * The fixture is one courier job, and its five names are about that job. A page
+ * that answers a question about gym classes with parcel weights and says
+ * nothing is claiming a result it did not produce — so the mismatch goes in the
+ * strip that already names the kind of run this was, rather than being left for
+ * the visitor to notice from the cards.
+ */
+export const CANNED_MISMATCH = 'answers are the courier example, not your text'
+
+/**
  * Shown for any failure whose message was not written for a visitor.
  *
  * A transport error's text can carry a URL, a header or a key fragment, so it

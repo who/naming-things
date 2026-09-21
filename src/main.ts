@@ -2,10 +2,12 @@ import './ui/styles.css'
 
 import type { ApiClient } from './api/client'
 import { createClient } from './api/mode'
+import type { FallbackReason } from './api/remote'
+import { describesSampleRun } from './api/sample'
 import { pickRandomDescriptor } from './core/descriptors'
 import { buildJevState, reaskJev, runPipeline, type RunStageEvent } from './core/pipeline'
-import type { Candidate, RunResult, RunStage, StyleVal } from './core/types'
-import { clearError, setModeBanner, showError } from './ui/banner'
+import type { Candidate, RunMode, RunResult, RunStage, StyleVal } from './core/types'
+import { CANNED_MISMATCH, clearError, setModeBanner, showError } from './ui/banner'
 import { queryRefs, type UiRefs } from './ui/dom'
 import {
   clearResults,
@@ -42,6 +44,46 @@ function showStatePayload(refs: UiRefs, run: RunResult, val: StyleVal): void {
       val,
     }),
   )
+}
+
+/**
+ * Name what the run on the page actually is.
+ *
+ * Canned answers reach a visitor two ways — sample mode, where there was never
+ * a key, and a live run that fell back mid-flight — and to whoever is reading
+ * the cards those are the same claim: five names that came out of a fixture
+ * rather than out of a model that read the box. Both land under the sample
+ * copy, with the fallback reason kept alongside so a quota stop still reads as
+ * a quota stop.
+ *
+ * The mismatch note is added only when the prose on the page is not the prose
+ * the fixture was written about. Someone running the courier example in sample
+ * mode is being answered about the thing they asked about, and warning them off
+ * a result that happens to be correct would be its own small dishonesty.
+ */
+function announceRun(
+  refs: UiRefs,
+  mode: RunMode,
+  fallback: FallbackReason | null,
+  descriptor: string,
+): void {
+  if (mode !== 'sample' && fallback === null) {
+    setModeBanner(refs, mode)
+
+    return
+  }
+
+  const notes: string[] = []
+
+  if (fallback !== null) {
+    notes.push(fallback)
+  }
+
+  if (!describesSampleRun(descriptor)) {
+    notes.push(CANNED_MISMATCH)
+  }
+
+  setModeBanner(refs, 'sample', notes.length === 0 ? undefined : notes.join('; '))
 }
 
 /**
@@ -154,11 +196,14 @@ async function executeReask(
  */
 export function bootstrap(doc: Document = document): UiRefs {
   const refs = queryRefs(doc)
+  let fallback: FallbackReason | null = null
   const { client, mode } = createClient((reason) => {
     // A live run that dropped to canned answers has to say so where the mode is
     // already named. One fixed disagreement read as a live one is the demo
-    // claiming something it did not do.
-    setModeBanner(refs, 'sample', reason)
+    // claiming something it did not do. The reason is kept rather than just
+    // shown, because every run after this one comes from the fixture too.
+    fallback = reason
+    announceRun(refs, mode, fallback, refs.descriptor.value)
   })
   let running = false
   let val = loadVal()
@@ -202,6 +247,10 @@ export function bootstrap(doc: Document = document): UiRefs {
     void executeRun(refs, client, val)
       .then((result) => {
         lastRun = result
+        // Said once the cards exist, and against the prose the run actually
+        // used: a box edited while the run was in flight describes the next
+        // run, not the one being announced.
+        announceRun(refs, mode, fallback, result.descriptor)
       })
       .catch((reason: unknown) => {
         // A refused descriptor or a lost draft leaves the regions empty, so the

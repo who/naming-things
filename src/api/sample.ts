@@ -5,6 +5,10 @@
  * the per-stage loading states in the UI are something a visitor can actually
  * see. No network, no keys, no environment: this is the client the page falls
  * back to when nothing else is configured.
+ *
+ * It also answers the one question a canned run raises: whether the prose on
+ * the page is the prose those canned answers were written about. The cards
+ * cannot show that difference, so something has to be able to state it.
  */
 
 import { parseCandidates } from '../core/parseCandidates'
@@ -31,6 +35,28 @@ function pause(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds)
   })
+}
+
+/** One comparable form: the same words, without the spacing or the case. */
+function comparable(descriptor: string): string {
+  return descriptor.trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+/**
+ * Whether the canned answers are actually about this prose.
+ *
+ * Sample mode serves one courier job's five names whatever the box says, and
+ * from the cards alone that is indistinguishable from a live run that happened
+ * to be about a parcel. This is the question that separates the two, asked of
+ * the descriptor because the descriptor is the only part of a canned run the
+ * visitor wrote.
+ *
+ * Spacing and case are not part of it. Prose that came back from a textarea
+ * with a stray newline is still the fixture's, and a visitor who lower-cased a
+ * word has not changed the thing being described.
+ */
+export function describesSampleRun(descriptor: string): boolean {
+  return comparable(descriptor) === comparable(SAMPLE_RUN.descriptor)
 }
 
 export class SampleApiClient implements ApiClient {

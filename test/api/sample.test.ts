@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { SampleApiClient } from '../../src/api/sample'
+import { describesSampleRun, SampleApiClient } from '../../src/api/sample'
 import { parseCandidates } from '../../src/core/parseCandidates'
 import { DEFAULT_VAL } from '../../src/core/types'
 import { SAMPLE_RUN } from '../../src/fixtures/sampleRun'
@@ -45,6 +45,22 @@ describe('SAMPLE_RUN', () => {
   })
 })
 
+describe('describesSampleRun', () => {
+  it('recognizes the fixture prose through spacing and case', () => {
+    const retyped = `\n  ${SAMPLE_RUN.descriptor.toUpperCase().replace(/ /g, '\n   ')}  `
+
+    expect(describesSampleRun(retyped)).toBe(true)
+  })
+
+  it('does not recognize prose the canned answers are not about', () => {
+    expect(describesSampleRun(EDITED_DESCRIPTOR)).toBe(false)
+  })
+
+  it('reads an empty box as prose of its own, not as the fixture', () => {
+    expect(describesSampleRun('   ')).toBe(false)
+  })
+})
+
 describe('SampleApiClient', () => {
   it('echoes the descriptor it was given rather than the fixture one', async () => {
     const draft = await new SampleApiClient().generateCandidates({
@@ -55,6 +71,18 @@ describe('SampleApiClient', () => {
     expect(draft.descriptor).toBe(EDITED_DESCRIPTOR)
     expect(draft.code).toBe(SAMPLE_RUN.code)
     expect(draft.candidates).toHaveLength(5)
+  })
+
+  it('answers edited prose with the fixture, which the descriptor check can see', async () => {
+    const draft = await new SampleApiClient().generateCandidates({
+      descriptor: EDITED_DESCRIPTOR,
+      val: DEFAULT_VAL(),
+    })
+
+    expect(draft.candidates.map((candidate) => candidate.name)).toEqual(
+      SAMPLE_RUN.candidates.map((candidate) => candidate.name),
+    )
+    expect(describesSampleRun(draft.descriptor)).toBe(false)
   })
 
   it('serves a whole run from the fixture inside the budget', async () => {

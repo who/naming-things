@@ -2,13 +2,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { loadByoKeys, type ByoKeys } from '../../src/api/byo'
 import { createClient, readModeSources, resolveMode, type ModeSources } from '../../src/api/mode'
-import { SampleApiClient } from '../../src/api/sample'
+import { describesSampleRun, SampleApiClient } from '../../src/api/sample'
+import { DEFAULT_VAL } from '../../src/core/types'
+import { SAMPLE_RUN } from '../../src/fixtures/sampleRun'
 
 const STORAGE_KEY = 'naming-things:keys'
 
 const BASE_URL = 'https://naming-things-worker.example.workers.dev'
 
 const KEYS: ByoKeys = { anthropicKey: 'local-anthropic-key', typesafeKey: 'local-typesafe-key' }
+
+/** Prose the courier fixture is plainly not about. */
+const EDITED_DESCRIPTOR = 'A gym class booking. A member holds a slot until the class starts.'
 
 /** Only the one method this module ever reaches for. */
 interface TestStorage {
@@ -147,5 +152,27 @@ describe('createClient', () => {
 
     expect(resolved.mode).toBe('byo')
     expect(resolved.client).not.toBeInstanceOf(SampleApiClient)
+  })
+
+  /**
+   * The mismatch the banner is built on, checked where the page sees it.
+   *
+   * Sample mode answers a gym class with parcel weights, because that is the
+   * only run it has. What must not happen is that going unsaid, so the draft it
+   * returns has to remain something the descriptor check can call canned.
+   */
+  it('answers unrelated prose with the fixture, and the run stays detectably canned', async () => {
+    const resolved = createClient(undefined, sources('', null))
+
+    const draft = await resolved.client.generateCandidates({
+      descriptor: EDITED_DESCRIPTOR,
+      val: DEFAULT_VAL(),
+    })
+
+    expect(resolved.mode).toBe('sample')
+    expect(draft.candidates.map((candidate) => candidate.name)).toEqual(
+      SAMPLE_RUN.candidates.map((candidate) => candidate.name),
+    )
+    expect(describesSampleRun(draft.descriptor)).toBe(false)
   })
 })
