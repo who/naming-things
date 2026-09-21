@@ -3,7 +3,7 @@
 # Nothing in this file is a secret: keys arrive through `wrangler secret put`
 # and live only in the Worker's environment, so the browser never sees one.
 
-name = "naming-things-worker"
+name = "naming-things"
 main = "src/index.ts"
 compatibility_date = "2026-09-21"
 
@@ -27,4 +27,4 @@ GLOBAL_DAILY_LIMIT = "300"
 # what makes it a real namespace rather than a deploy-time error.
 [[kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "replace-with-the-id-wrangler-kv-namespace-create-prints"
+id = "91fa587239454eaab0db6233f6b74a46"
