@@ -68,44 +68,54 @@ body {
  * find a key for. The word orange and the word blue are in the copy on purpose:
  * a legend that carries its meaning only in the swatch says nothing to anyone
  * reading it in grayscale or through a screen reader.
+ *
+ * Both entries run along one line rather than down a column, so the key reads
+ * as a single strip under the tagline instead of a second stacked paragraph
+ * competing with it. No width cap here on purpose: the tagline is held to 62ch
+ * because it is prose to be read, where this row is two short labels that want
+ * the room to stay inline. It wraps when the room runs out.
  */
 .legend {
+  align-items: center;
   display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.4rem;
   list-style: none;
   margin: 0.6rem 0 0;
-  max-width: 62ch;
   padding: 0;
 }
 
-/* Badge and sentence sit on one line and wrap to two when the column is too
-   narrow for both, so a phone stacks the note under its badge instead of
-   squeezing the tagline above it. */
+/* Badge and sentence stay together as one unit and wrap to two lines when the
+   row cannot hold both, so a phone puts a note under its own badge rather than
+   splitting the pair across entries. */
 .legend-item {
-  align-items: baseline;
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
 }
 
+/* The pill is filled with its accent rather than outlined in it: an outline on
+   this background reads as one more piece of dark chrome, where a solid fill is
+   the colour itself, which is the thing the legend is naming. The label is
+   drawn in the page background colour, which clears 7:1 against both fills —
+   the page's usual light ink would not, because both accents are light. */
 .legend-badge {
-  border: 1px solid currentcolor;
   border-radius: 999px;
+  color: var(--bg);
   font-size: 0.72rem;
+  font-weight: 600;
   letter-spacing: 0.04em;
-  padding: 0.1rem 0.5rem;
+  padding: 0.15rem 0.6rem;
   white-space: nowrap;
 }
 
 .legend-llm {
-  background: rgba(240, 136, 62, 0.12);
-  color: var(--accent-llm);
+  background: var(--accent-llm);
 }
 
 .legend-jev {
-  background: rgba(88, 166, 255, 0.12);
-  color: var(--accent-jev);
+  background: var(--accent-jev);
 }
 
 .legend-note {
