@@ -111,6 +111,10 @@ describe('loadVal', () => {
     expect(loadVal()).toEqual(DEFAULT_VAL())
   })
 
+  it('makes camelCase the casing a first visit arrives with', () => {
+    expect(loadVal().naming).toBe('camelCase')
+  })
+
   it('hands back a fresh default rather than a shared one', () => {
     const first = loadVal()
 
@@ -190,6 +194,14 @@ describe('mountValControls', () => {
     expect(chip(root, 'prefer', 'id-like').getAttribute('aria-pressed')).toBe('true')
     expect(chip(root, 'prefer', 'domain-nouns').getAttribute('aria-pressed')).toBe('false')
     expect(slider(root, 'explicitUnits').value).toBe('0.9')
+  })
+
+  it('presses camelCase on a first visit, so Run needs no chip chosen first', () => {
+    mountValControls(root, loadVal(), record)
+
+    expect(chip(root, 'naming', 'camelCase').getAttribute('aria-pressed')).toBe('true')
+    expect(chip(root, 'naming', 'snake_case').getAttribute('aria-pressed')).toBe('false')
+    expect(chip(root, 'naming', 'PascalCase').getAttribute('aria-pressed')).toBe('false')
   })
 
   it('emits the new style when a naming chip is chosen', () => {
