@@ -11,6 +11,7 @@
  * cannot show that difference, so something has to be able to state it.
  */
 
+import { pickRandomDescriptor } from '../core/descriptors'
 import { parseCandidates } from '../core/parseCandidates'
 import type { JevPick, JevState, LlmPick } from '../core/types'
 import { SAMPLE_RUN } from '../fixtures/sampleRun'
@@ -90,5 +91,17 @@ export class SampleApiClient implements ApiClient {
     await pause(JEV_CHOICE_DELAY_MS)
 
     return { ...SAMPLE_RUN.jev, probabilities: { ...SAMPLE_RUN.jev.probabilities } }
+  }
+
+  /**
+   * A brief out of the local bank, since a canned client has no model to ask.
+   *
+   * The one method here that does not pause. The three above are answers a run
+   * waits on, and their delays are what make the per-stage spinners visible;
+   * Randomize is a button that swaps the text in a box, and a spinner over a
+   * lookup would be theatre rather than feedback.
+   */
+  generateDescriptor(avoid?: string): Promise<string> {
+    return Promise.resolve(pickRandomDescriptor(avoid))
   }
 }

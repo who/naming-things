@@ -14,6 +14,12 @@ const KEYS: ByoKeys = { anthropicKey: 'local-anthropic-key', typesafeKey: 'local
 
 const DESCRIPTOR = 'A courier delivery job with a parcel that has to be weighed.'
 
+/** A brief long enough to clear the floor a written one has to clear. */
+const BRIEF =
+  'A SavedSearch in an analytics console, holding the query text and the account that wrote it. '
+  + 'The property to name is the moment a schedule last ran the search, held as a timestamp and '
+  + 'absent until a schedule has fired once.'
+
 const CODE = 'interface DeliveryJob {\n  // the parcel, weighed in grams\n}'
 
 const CANDIDATES: Candidate[] = [
@@ -175,6 +181,35 @@ describe('RemoteApiClient, through the Worker', () => {
     ).rejects.toMatchObject({ reason: 'provider error' })
   })
 
+  it('asks for a brief, carrying the prose it is replacing', async () => {
+    useTransport(answers({ descriptor: BRIEF }))
+
+    const descriptor = await worker().generateDescriptor(DESCRIPTOR)
+    const call = firstCall()
+
+    expect(call.url).toBe(
+      'https://naming-things-worker.example.workers.dev/api/llm/descriptor',
+    )
+    expect(bodyOf(call)).toEqual({ avoid: DESCRIPTOR })
+    expect(descriptor).toBe(BRIEF)
+  })
+
+  it('sends nothing to steer away from when there is no prose to replace', async () => {
+    useTransport(answers({ descriptor: BRIEF }))
+
+    await worker().generateDescriptor()
+
+    expect(bodyOf(firstCall())).toEqual({})
+  })
+
+  it('refuses a brief too short to have a property named in it', async () => {
+    useTransport(answers({ descriptor: 'A parcel that needs a name.' }))
+
+    await expect(worker().generateDescriptor()).rejects.toMatchObject({
+      reason: 'provider error',
+    })
+  })
+
   it('reads the flat Jev answer the Worker has already unwrapped', async () => {
     useTransport(
       answers({
@@ -314,6 +349,24 @@ describe('RemoteApiClient, with the visitor’s own keys', () => {
     expect(draft.candidates).toHaveLength(5)
   })
 
+  it('writes a brief through the same forced tool call', async () => {
+    useTransport(
+      answers({
+        content: [{ type: 'tool_use', name: 'write_descriptor', input: { descriptor: BRIEF } }],
+      }),
+    )
+
+    const descriptor = await new RemoteApiClient(KEYS).generateDescriptor(DESCRIPTOR)
+    const call = firstCall()
+
+    expect(call.url).toBe('https://api.anthropic.com/v1/messages')
+    expect(bodyOf(call).tool_choice).toEqual({ type: 'tool', name: 'write_descriptor' })
+    expect(String((bodyOf(call).messages as { content: string }[])[0]?.content)).toContain(
+      `<avoid>\n${DESCRIPTOR}\n</avoid>`,
+    )
+    expect(descriptor).toBe(BRIEF)
+  })
+
   it('asks System One its one question and unwraps the envelope', async () => {
     useTransport(
       answers({
@@ -407,6 +460,7 @@ describe('withSampleFallback', () => {
       generateCandidates: () => Promise.reject(new Error('a bug in this app')),
       llmPick: () => Promise.reject(new Error('a bug in this app')),
       jevChoice: () => Promise.reject(new Error('a bug in this app')),
+      generateDescriptor: () => Promise.reject(new Error('a bug in this app')),
     }
 
     await expect(

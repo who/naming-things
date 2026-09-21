@@ -132,7 +132,7 @@ describe('routing', () => {
     expect(response.headers.get('Allow')).toContain('POST')
   })
 
-  // All three provider routes have real handlers now, and this env carries no
+  // All four provider routes have real handlers now, and this env carries no
   // key of either kind, so each handler's own refusal is what proves the
   // request got past the router — and proves the two judges refuse under their
   // own error strings rather than a shared one. The handlers themselves are
@@ -140,6 +140,7 @@ describe('routing', () => {
   it.each([
     ['/api/llm/candidates', 'llm_unconfigured'],
     ['/api/llm/pick', 'llm_unconfigured'],
+    ['/api/llm/descriptor', 'llm_unconfigured'],
     ['/api/jev/choice', 'jev_unconfigured'],
   ])('hands a well-formed POST to %s to the handler behind it', async (path, error) => {
     const response = await send(

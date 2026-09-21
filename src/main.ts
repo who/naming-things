@@ -185,6 +185,12 @@ async function executeReask(
  * Hydrate the page shell: resolve the element contract, seed the descriptor
  * box, mount the style controls, and wire Randomize, Run and Re-ask Jev.
  *
+ * Randomize goes through the same client Run does, so a page with a model
+ * behind it writes a fresh brief instead of dealing another card off the local
+ * bank, and a page without one deals from the bank exactly as before. It never
+ * starts a run: the new prose sits in the box until the visitor asks for names
+ * for it.
+ *
  * Run goes through whichever client this build and this browser add up to, and
  * through the fallback behind it, so the page works with no key and no network
  * and says which of those it is doing. The style the controls hold is the one
@@ -207,6 +213,7 @@ export function bootstrap(doc: Document = document): UiRefs {
     announceRun(refs, mode, fallback, refs.descriptor.value)
   })
   let running = false
+  let randomizing = false
   let val = loadVal()
   let lastRun: RunResult | null = null
 
@@ -230,9 +237,38 @@ export function bootstrap(doc: Document = document): UiRefs {
     }
   })
 
+  // The first brief comes from the bank in every mode: a page that spent a
+  // round trip before the visitor had asked for anything would be slower to
+  // read and would charge a deployment for a brief nobody requested.
   refs.descriptor.value = pickRandomDescriptor()
   refs.randomize.addEventListener('click', () => {
-    refs.descriptor.value = pickRandomDescriptor(refs.descriptor.value)
+    // The same guard Run uses. A second click while the first is still in
+    // flight would race two briefs into one box, and the later answer is not
+    // necessarily the later click.
+    if (randomizing) {
+      return
+    }
+
+    randomizing = true
+    refs.randomize.disabled = true
+
+    void client
+      .generateDescriptor(refs.descriptor.value)
+      .then((descriptor) => {
+        refs.descriptor.value = descriptor
+      })
+      .catch((reason: unknown) => {
+        // The box keeps what it had. A failed Randomize is a button that did
+        // nothing, and wiping prose the visitor may have written themselves
+        // would cost them more than the new brief was worth. A live path that
+        // merely went quiet never arrives here — it has already fallen back to
+        // the bank and said so in the banner — so this is the app's own bugs.
+        showError(refs, reason)
+      })
+      .finally(() => {
+        randomizing = false
+        refs.randomize.disabled = false
+      })
   })
 
   refs.run.disabled = false

@@ -2,11 +2,11 @@
  * The Worker that fronts every live call, and the only place a key may live.
  *
  * This module is the router and the gate: it answers the CORS preflight,
- * dispatches the four routes, and refuses anything oversized, unrouted, sent
- * with the wrong method or over its daily quota before a handler runs. The two
- * LLM routes reach a provider through `./llm` and the Jev route reaches System
- * One through `./jev`; all three are counted through `./ratelimit`, and the
- * health route deliberately is not.
+ * dispatches the five routes, and refuses anything oversized, unrouted, sent
+ * with the wrong method or over its daily quota before a handler runs. The
+ * three LLM routes reach a provider through `./llm` and the Jev route reaches
+ * System One through `./jev`; all four are counted through `./ratelimit`, and
+ * the health route deliberately is not.
  *
  * Every refusal is JSON with an `error` key, so the client branches on a stable
  * string instead of parsing status text that varies by runtime.
@@ -14,7 +14,7 @@
 
 import { corsHeaders, type Env } from './cors'
 import { jevChoice } from './jev'
-import { generateCandidates, pickBest } from './llm'
+import { generateCandidates, pickBest, writeDescriptor } from './llm'
 import { checkAndIncrement } from './ratelimit'
 
 /**
@@ -88,6 +88,7 @@ function withCors(response: Response, headers: Record<string, string>): Response
 const POST_ROUTES: Record<string, RouteHandler> = {
   '/api/llm/candidates': generateCandidates,
   '/api/llm/pick': pickBest,
+  '/api/llm/descriptor': writeDescriptor,
   '/api/jev/choice': jevChoice,
 }
 

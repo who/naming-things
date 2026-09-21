@@ -67,14 +67,20 @@ describe('bootstrap', () => {
     expect(DESCRIPTOR_BANK).toContain(refs.descriptor.value)
   })
 
-  it('swaps the descriptor for a different one on Randomize', () => {
+  // Randomize goes through the client now, so the swap lands a turn later even
+  // in sample mode, where the bank answers it without a network in sight.
+  it('swaps the descriptor for a different one on Randomize', async () => {
     const refs = bootstrap(document)
     const before = refs.descriptor.value
 
     refs.randomize.click()
 
-    expect(refs.descriptor.value).not.toBe(before)
+    await vi.waitFor(() => {
+      expect(refs.descriptor.value).not.toBe(before)
+    })
+
     expect(DESCRIPTOR_BANK).toContain(refs.descriptor.value)
+    expect(refs.randomize.disabled).toBe(false)
   })
 
   it('enables Run and holds Re-ask Jev back until a run has landed', () => {

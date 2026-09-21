@@ -107,6 +107,10 @@ class JevOnlyClient implements ApiClient {
     throw new Error('a re-ask must not ask the LLM again')
   }
 
+  generateDescriptor(): Promise<string> {
+    throw new Error('a re-ask must not rewrite the brief it is about')
+  }
+
   async jevChoice(state: JevState): Promise<JevPick> {
     this.seen.jev.push(state)
 

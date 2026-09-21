@@ -145,6 +145,16 @@ export function withSampleFallback(live: ApiClient, onFallback?: FallbackListene
       ),
     llmPick: (input) => attempt(() => live.llmPick(input), () => canned.llmPick(input)),
     jevChoice: (state) => attempt(() => live.jevChoice(state), () => canned.jevChoice(state)),
+    generateDescriptor: (avoid) =>
+      attempt(
+        () => live.generateDescriptor(avoid),
+        // The bank, which is what Randomize was before there was a model behind
+        // it. The latch matters most here: a visitor clicking Randomize after
+        // the quota ran out gets a new brief immediately rather than a round
+        // trip's wait for the same refusal, and the banner has already said why
+        // the prose is canned.
+        () => canned.generateDescriptor(avoid),
+      ),
   }
 }
 

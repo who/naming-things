@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { loadByoKeys, type ByoKeys } from '../../src/api/byo'
 import { createClient, readModeSources, resolveMode, type ModeSources } from '../../src/api/mode'
+import type { FallbackReason } from '../../src/api/remote'
 import { describesSampleRun, SampleApiClient } from '../../src/api/sample'
+import { DESCRIPTOR_BANK } from '../../src/core/descriptors'
 import { DEFAULT_VAL } from '../../src/core/types'
 import { SAMPLE_RUN } from '../../src/fixtures/sampleRun'
 
@@ -49,8 +51,14 @@ function sources(baseUrl: string, keys: ByoKeys | null): ModeSources {
   return { baseUrl, keys }
 }
 
+/** A transport that never opens, the way an offline browser's does not. */
+function useOfflineTransport(): void {
+  vi.stubGlobal('fetch', () => Promise.reject(new TypeError('Failed to fetch')))
+}
+
 afterEach(() => {
   vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
   useStorage(null)
 })
 
@@ -174,5 +182,38 @@ describe('createClient', () => {
       SAMPLE_RUN.candidates.map((candidate) => candidate.name),
     )
     expect(describesSampleRun(draft.descriptor)).toBe(false)
+  })
+})
+
+/**
+ * Randomize, at the seam where a mode decides what it can do.
+ *
+ * The button reaches a model in the two live modes and the local bank in sample
+ * mode, and the wrapper in between turns a live path that cannot answer into
+ * the second of those. What must not happen is a visitor clicking Randomize and
+ * getting nothing, whichever of the three they are in.
+ */
+describe('generateDescriptor', () => {
+  it('deals from the bank in sample mode, avoiding the brief on screen', async () => {
+    const resolved = createClient(undefined, sources('', null))
+    const onScreen = DESCRIPTOR_BANK[0]
+
+    const next = await resolved.client.generateDescriptor(onScreen)
+
+    expect(DESCRIPTOR_BANK).toContain(next)
+    expect(next).not.toBe(onScreen)
+  })
+
+  it('falls back to the bank, and says why, when the live path cannot answer', async () => {
+    const reasons: FallbackReason[] = []
+    const resolved = createClient((reason) => reasons.push(reason), sources(BASE_URL, null))
+
+    useOfflineTransport()
+
+    const next = await resolved.client.generateDescriptor()
+
+    expect(resolved.mode).toBe('live')
+    expect(DESCRIPTOR_BANK).toContain(next)
+    expect(reasons).toEqual(['network error'])
   })
 })

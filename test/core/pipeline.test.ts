@@ -99,6 +99,11 @@ class StubApiClient implements ApiClient {
     return llm
   }
 
+  /** A run never asks for one, so this only has to satisfy the interface. */
+  generateDescriptor(): Promise<string> {
+    return Promise.resolve(DESCRIPTOR)
+  }
+
   async jevChoice(state: JevState): Promise<JevPick> {
     this.seen.jev.push(state)
 

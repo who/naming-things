@@ -37,14 +37,21 @@ export interface LlmPickInput {
 }
 
 /**
- * The three calls one head-to-head run needs.
+ * The three calls one head-to-head run needs, and the one that writes what a
+ * run is about.
  *
- * There are three methods and two round trips: `generateCandidates` produces
+ * A run is three methods over two round trips: `generateCandidates` produces
  * the sketch and the options together, then `llmPick` and `jevChoice` race
- * over that same material.
+ * over that same material. `generateDescriptor` sits outside all of that — it
+ * answers the Randomize button, before there is a run to speak of, and takes
+ * the prose currently on screen only so the next brief is visibly a new one.
+ * It lives on this interface rather than beside the bank because a mode that
+ * can ask a model for a brief and one that can only shuffle canned prose are
+ * the same two implementations the run calls already distinguish between.
  */
 export interface ApiClient {
   generateCandidates(input: GenerateCandidatesInput): Promise<CandidateDraft>
   llmPick(input: LlmPickInput): Promise<LlmPick>
   jevChoice(state: JevState): Promise<JevPick>
+  generateDescriptor(avoid?: string): Promise<string>
 }
