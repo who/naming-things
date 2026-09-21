@@ -8,7 +8,7 @@
  * an error class whose text was written to be read by a visitor.
  */
 
-import { LiveCallError } from '../api/remote'
+import { LiveCallError, type FallbackReason } from '../api/remote'
 import { CandidateParseError } from '../core/parseCandidates'
 import { StateTooLargeError } from '../core/pipeline'
 import type { RunMode } from '../core/types'
@@ -42,16 +42,70 @@ const MODE_COPY: Record<RunMode, string | null> = {
 const GENERIC_ERROR = 'That run could not finish. Try again in a moment.'
 
 /**
- * The one thing said about a live call that would not answer.
+ * Said about a live call the provider was too busy to answer, and only that.
  *
- * A quota that has run out, a Worker missing its keys and a provider having a
- * bad minute are four short reasons inside this app and one sentence outside
- * it, because they are one situation to whoever is reading: the names are not
- * coming right now, and the thing to do is ask again later. Nothing stands in
- * for them in the meantime — a page that filled the cards from a fixture here
- * would be answering with names no model chose.
+ * This is the one live failure where asking again in a few seconds is real
+ * advice: the request was fine and the far end was having a minute. Nothing
+ * stands in for the names in the meantime — a page that filled the cards from a
+ * fixture here would be answering with names no model chose.
  */
 export const RUN_BUSY = 'Too busy to answer that right now. Try again in a moment.'
+
+/**
+ * Said when the demo has spent the day's runs.
+ *
+ * The counter turns over at UTC midnight, so the wait has a length and is worth
+ * naming: the busy line would send someone straight back into a wall they
+ * cannot get past until tomorrow.
+ */
+export const QUOTA_SPENT = 'This demo has spent its quota for today. It resets at midnight UTC.'
+
+/**
+ * Said when a live path was never switched on in this deployment.
+ *
+ * Waiting does nothing for a missing key or a missing binding, so the line does
+ * not suggest it. The only person who can act on this one is whoever deployed
+ * the page, and a visitor who tells them is more use than one who retries.
+ */
+export const SERVICE_OFF = 'Part of this deployment was never configured, so that run cannot happen.'
+
+/**
+ * Said when the call never reached anything at all.
+ *
+ * The one live failure a visitor can often fix from their own side — an offline
+ * laptop, a blocked origin, a captive network — which is why it is worth a line
+ * that points at the connection rather than at the service.
+ */
+export const NETWORK_DOWN = 'Could not reach the service. Check your connection and try again.'
+
+/**
+ * Said for anything else the far end did instead of answering.
+ *
+ * A 500, an edge error page, a body that is not JSON, an answer that is JSON
+ * but not the shape it promised: one line, because none of that is something a
+ * visitor can act on differently and the console already holds the detail.
+ */
+export const PROVIDER_FAILED = 'The model service failed on that run. Try again in a moment.'
+
+/**
+ * One line per live failure, so a demo can be debugged from the page it failed
+ * on.
+ *
+ * Sending all five through the busy line made every live failure look like a
+ * bad minute, which left a spent quota, an unconfigured deployment and a dead
+ * connection all reading as "come back in a moment" — three pieces of advice
+ * that are wrong, and one page that could not be told apart from a healthy one
+ * under load. Keyed by the whole reason vocabulary rather than read with a
+ * default, so a reason added later lands as a type error here instead of
+ * quietly inheriting the busy line again.
+ */
+const LIVE_FAILURE_COPY: Record<FallbackReason, string> = {
+  'quota exceeded': QUOTA_SPENT,
+  'service unavailable': SERVICE_OFF,
+  'upstream busy': RUN_BUSY,
+  'provider error': PROVIDER_FAILED,
+  'network error': NETWORK_DOWN,
+}
 
 /**
  * What a visitor is told when Randomize comes back with nothing.
@@ -95,16 +149,20 @@ export function setModeBanner(refs: UiRefs, mode: RunMode, reason?: string): voi
  * A rejected payload and an over-budget state both explain themselves in their
  * message — which candidate broke which rule, how many bytes over the limit —
  * so those are passed through word for word. A live call that would not answer
- * is the busy line instead: its own message names an upstream condition in this
- * app's vocabulary, and the visitor's half of that is one sentence. Anything
- * else is something nobody can act on, and gets the generic line.
+ * gets the line written for its reason instead: the reason itself is this app's
+ * vocabulary for its own console, but the five situations behind it are not one
+ * situation, and a spent quota told apart from a dead connection is the
+ * difference between advice that works and advice that does not. Anything else
+ * is something nobody can act on, and gets the generic line.
  *
  * One function, because the error strip and the two pick badges must not
  * disagree about how much of the same failure is safe to put on screen.
  */
 export function visitorMessage(error: unknown): string {
   if (error instanceof LiveCallError) {
-    return RUN_BUSY
+    // A reason from outside the vocabulary is still a failure someone is
+    // waiting on, so it takes the generic line rather than an empty strip.
+    return LIVE_FAILURE_COPY[error.reason] ?? GENERIC_ERROR
   }
 
   const readable = error instanceof CandidateParseError || error instanceof StateTooLargeError

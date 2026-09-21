@@ -33,12 +33,15 @@ import type {
  *
  * These are appended to the mode banner's fixed copy and shown verbatim, so
  * they are phrases rather than error codes: a quota that resets tomorrow, a
- * deployment that was never given its keys, a provider having a bad minute and
- * a connection that never opened are four different things to wait out.
+ * deployment that was never given its keys, a provider having a bad minute, a
+ * provider answering with something unusable and a connection that never opened
+ * are five different things to wait out, and only one of them is worth waiting
+ * a few seconds for.
  */
 export type FallbackReason =
   | 'quota exceeded'
   | 'service unavailable'
+  | 'upstream busy'
   | 'provider error'
   | 'network error'
 
@@ -78,6 +81,16 @@ const JEV_ROUTE = '/api/jev/choice'
  * minute to wait out.
  */
 const UNCONFIGURED_SUFFIX = '_unconfigured'
+
+/**
+ * The suffix every "the provider is overloaded" error ends in.
+ *
+ * The Worker spells one per side and turns a 429 or a 529 from either provider
+ * into it. This is the only refusal a visitor should be told to retry in the
+ * next few seconds: the request was fine, the key was fine, and the far end was
+ * having a minute.
+ */
+const BUSY_SUFFIX = '_upstream_busy'
 
 /** The provider endpoints a bring-your-own-keys run talks to directly. */
 const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages'
@@ -403,11 +416,17 @@ async function readJson(response: Response): Promise<Record<string, unknown> | n
 /**
  * What a refusal means, from its status and its `error` key.
  *
- * Two cases are worth telling apart and the rest are not. A quota stop is the
+ * Three cases are worth telling apart and the rest are not. A quota stop is the
  * demo working as designed and resets on its own; an unconfigured deployment is
- * a live path that was never switched on. Everything else — a provider having a
- * bad minute, an edge error page, a body that is not JSON at all — is one
- * sentence to a visitor, and a more precise one would only be more words.
+ * a live path that was never switched on; an overloaded provider is a bad
+ * minute to wait out. Everything else — an edge error page, a body that is not
+ * JSON at all, a provider refusing for a reason of its own — is one sentence to
+ * a visitor, and a more precise one would only be more words.
+ *
+ * The status carries overload on its own at the end, because a run on the
+ * visitor's own keys talks to the providers directly: its 429 and its 529
+ * arrive with a body written by someone other than the Worker, and the Worker's
+ * vocabulary is not in it.
  */
 function classify(status: number, payload: Record<string, unknown> | null): FallbackReason {
   const error = payload === null ? null : payload.error
@@ -420,9 +439,13 @@ function classify(status: number, payload: Record<string, unknown> | null): Fall
     if (status === 503 && error.endsWith(UNCONFIGURED_SUFFIX)) {
       return 'service unavailable'
     }
+
+    if (error.endsWith(BUSY_SUFFIX)) {
+      return 'upstream busy'
+    }
   }
 
-  return 'provider error'
+  return status === 429 || status === 529 ? 'upstream busy' : 'provider error'
 }
 
 /**

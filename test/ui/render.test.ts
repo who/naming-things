@@ -4,7 +4,7 @@ import INDEX_HTML from '../../index.html?raw'
 import { LiveCallError } from '../../src/api/remote'
 import { DEFAULT_VAL, type Candidate, type RunResult } from '../../src/core/types'
 import { SAMPLE_RUN } from '../fixtures/sampleRun'
-import { RUN_BUSY } from '../../src/ui/banner'
+import { NETWORK_DOWN, QUOTA_SPENT } from '../../src/ui/banner'
 import { queryRefs, type UiRefs } from '../../src/ui/dom'
 import {
   clearResults,
@@ -241,23 +241,23 @@ describe('renderStageError', () => {
     renderStageError(refs, 'jevPick', new LiveCallError('quota exceeded'))
 
     expect(refs.jevPick.textContent).not.toContain(SAMPLE_RUN.jev.choice)
-    expect(refs.jevPick.querySelector('.pick-error')?.textContent).toBe(RUN_BUSY)
+    expect(refs.jevPick.querySelector('.pick-error')?.textContent).toBe(QUOTA_SPENT)
   })
 
   /**
    * The badge says what the strip would say, and no more.
    *
    * A side that went missing is the one place an upstream sentence could reach
-   * the page through a region a visitor reads as closely as a pick: "quota
-   * exceeded" is this app's vocabulary for its own console, and the four
-   * reasons behind it are one situation to whoever is waiting.
+   * the page through a region a visitor reads as closely as a pick, so the
+   * badge carries the line written for the reason and never the reason itself:
+   * "network error" is this app's vocabulary for its own console.
    */
-  it('shows the busy line for a live failure and never its own text', () => {
+  it('shows the line written for a live failure and never its own text', () => {
     renderStageError(refs, 'llmPick', new LiveCallError('network error'))
 
     const shown = refs.llmPick.querySelector('.pick-error')?.textContent
 
-    expect(shown).toBe(RUN_BUSY)
+    expect(shown).toBe(NETWORK_DOWN)
     expect(shown).not.toContain('network error')
   })
 

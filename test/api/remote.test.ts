@@ -284,6 +284,33 @@ describe('RemoteApiClient failure classification', () => {
     })
   })
 
+  it('calls an overloaded provider busy, whichever side reported it', async () => {
+    useTransport(refuses(502, 'llm_upstream_busy'))
+
+    await expect(worker().generateCandidates(input)).rejects.toMatchObject({
+      reason: 'upstream busy',
+    })
+
+    useTransport(refuses(502, 'jev_upstream_busy'))
+
+    await expect(worker().generateCandidates(input)).rejects.toMatchObject({
+      reason: 'upstream busy',
+    })
+  })
+
+  /**
+   * A run on the visitor's own keys has no Worker in front of it, so overload
+   * arrives as a status and a body this app did not write. The status is enough
+   * to tell that case from a provider refusing on the merits.
+   */
+  it('reads a bare overload status as busy even with nothing to read in the body', async () => {
+    useTransport(refuses(529, 'overloaded_error'))
+
+    await expect(worker().generateCandidates(input)).rejects.toMatchObject({
+      reason: 'upstream busy',
+    })
+  })
+
   it('calls anything else upstream a provider error', async () => {
     useTransport(refuses(500, 'llm_upstream_error'))
 
