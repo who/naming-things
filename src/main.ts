@@ -196,8 +196,9 @@ async function executeReask(
  * Randomize goes through the same client Run does, so a page with a model
  * behind it writes a fresh brief instead of dealing another card off the local
  * bank, and a page without one deals from the bank exactly as before. It never
- * starts a run: the new prose sits in the box until the visitor asks for names
- * for it.
+ * starts a run, though it does end one: the cards, the badges and the verdict
+ * all answered the brief being replaced, so they come down with it and the new
+ * prose sits alone in the box until the visitor asks for names for it.
  *
  * Run goes through whichever client this build and this browser add up to, and
  * through the fallback behind it, so the page works with no key and no network
@@ -224,6 +225,23 @@ export function bootstrap(doc: Document = document): UiRefs {
   let randomizing = false
   let val = loadVal()
   let lastRun: RunResult | null = null
+
+  /**
+   * Take down everything the last run left on the page.
+   *
+   * Run clears these regions itself as it starts, because it begins filling
+   * them back in on the same click. Randomize has no run behind it and nothing
+   * to put in their place, so the clearing has to be a step of its own — and it
+   * has to take the bookkeeping with the pixels: a `lastRun` left standing
+   * would let Re-ask Jev ask a judge about cards that are no longer on screen.
+   */
+  const clearPreviousRun = (): void => {
+    clearResults(refs)
+    clearStatePayload(refs)
+    clearError(refs)
+    lastRun = null
+    refs.reaskJev.disabled = true
+  }
 
   setModeBanner(refs, mode)
   mountStateModal(refs)
@@ -257,25 +275,36 @@ export function bootstrap(doc: Document = document): UiRefs {
       return
     }
 
+    // Read before the box is emptied. This is the brief being replaced, and a
+    // model asked to avoid an empty string has been asked to avoid nothing.
+    const replaced = refs.descriptor.value
+
     randomizing = true
     refs.randomize.disabled = true
     // A greyed button is the whole of the current feedback, and a model takes
     // seconds to answer. The box about to be rewritten is the thing that is
     // waiting, so the box is what says so.
     setActivityWaiting(refs.descriptorShell, true)
-    clearError(refs)
+    // Everything below the box was an answer about the brief on its way out.
+    // Five names for a courier job sitting under a description of something
+    // else is the page claiming a run it never did, so the old run goes as soon
+    // as the new brief is asked for rather than whenever it happens to arrive.
+    clearPreviousRun()
+    refs.descriptor.value = ''
 
     void client
-      .generateDescriptor(refs.descriptor.value)
+      .generateDescriptor(replaced)
       .then((descriptor) => {
         refs.descriptor.value = descriptor
       })
       .catch((reason: unknown) => {
-        // The box keeps what it had. A failed Randomize is a button that did
-        // nothing, and wiping prose the visitor may have written themselves
-        // would cost them more than the new brief was worth. The strip gets the
-        // fixed line rather than the failure: nothing that reaches here is
-        // about a run, and none of it was written for a visitor to read.
+        // The prose comes back, because it may be the visitor's own and nothing
+        // arrived to replace it. The results do not: they answered the last run
+        // of that brief, and that run ended at the click whether or not a new
+        // brief followed it. The strip gets the fixed line rather than the
+        // failure: nothing that reaches here is about a run, and none of it was
+        // written for a visitor to read.
+        refs.descriptor.value = replaced
         console.error(reason)
         showBusy(refs, RANDOMIZE_BUSY)
       })
