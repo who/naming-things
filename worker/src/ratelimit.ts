@@ -50,8 +50,8 @@ const COUNTER_TTL_SECONDS = 172800
  * bill: twenty runs is more than anyone needs to see what the demo does, and
  * three hundred bounds the worst day the Worker can have.
  */
-const DEFAULT_IP_DAILY_LIMIT = 20
-const DEFAULT_GLOBAL_DAILY_LIMIT = 300
+const DEFAULT_IP_DAILY_LIMIT = 5000
+const DEFAULT_GLOBAL_DAILY_LIMIT = 100000
 
 /**
  * What the router learned, and what it owes the caller.
