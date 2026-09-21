@@ -1,15 +1,20 @@
 /**
- * The canned run behind sample mode.
+ * One complete run, for the tests that need something to draw.
  *
- * A visitor with no key still has to see the point of the page, so this
- * fixture is a real disagreement rather than a pleasant one: the plain model
- * reaches for the short noun and Jev reaches for the name that carries its
- * unit. An agreeing fixture would demo nothing.
+ * Nothing ships this: the page has no canned run behind it, and a fixture the
+ * production bundle could reach would be ten names a model never wrote, one
+ * import away from a visitor's screen. It lives here so the rendering and state
+ * tests have a full head-to-head to work from.
+ *
+ * The disagreement is the point, and it is a real one rather than a pleasant
+ * one: the plain model reaches for the short noun and Jev reaches for the name
+ * that carries its unit. An agreeing fixture would leave the verdict strip and
+ * the two-badge layout untested in the case they exist for.
  */
 
-import type { Candidate, JevPick, LlmPick } from '../core/types'
+import type { Candidate, JevPick, LlmPick } from '../../src/core/types'
 
-/** One complete head-to-head, minus the style, which the visitor owns. */
+/** One complete head-to-head, minus the style, which a run's caller owns. */
 export interface SampleRun {
   descriptor: string
   code: string

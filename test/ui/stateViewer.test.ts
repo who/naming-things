@@ -4,7 +4,7 @@ import INDEX_HTML from '../../index.html?raw'
 import { CandidateParseError } from '../../src/core/parseCandidates'
 import { StateTooLargeError } from '../../src/core/pipeline'
 import { DEFAULT_VAL, type JevState, type RunMode } from '../../src/core/types'
-import { SAMPLE_RUN } from '../../src/fixtures/sampleRun'
+import { SAMPLE_RUN } from '../fixtures/sampleRun'
 import { clearError, setModeBanner, showError } from '../../src/ui/banner'
 import { queryRefs, type UiRefs } from '../../src/ui/dom'
 import {
@@ -237,8 +237,8 @@ describe('setModeBanner', () => {
     refs = queryRefs(document)
   })
 
-  const COPY: Record<'sample' | 'byo', string> = {
-    sample: 'Sample run — add keys for live LLM and Jev',
+  const COPY: Record<'unconfigured' | 'byo', string> = {
+    unconfigured: 'This build was never given an API to call — nothing here can run',
     byo: 'Live run with your local keys',
   }
 
@@ -252,17 +252,17 @@ describe('setModeBanner', () => {
   }
 
   it('says nothing at all for a hosted live run', () => {
-    setModeBanner(refs, 'sample')
+    setModeBanner(refs, 'byo')
     setModeBanner(refs, 'live')
 
     expect(refs.banner.textContent).toBe('')
     expect(refs.banner.hidden).toBe(true)
   })
 
-  it('appends a fallback reason in parentheses', () => {
-    setModeBanner(refs, 'sample', 'quota exceeded')
+  it('appends a reason in parentheses', () => {
+    setModeBanner(refs, 'byo', 'your own quota')
 
-    expect(refs.banner.textContent).toBe(`${COPY.sample} (quota exceeded)`)
+    expect(refs.banner.textContent).toBe(`${COPY.byo} (your own quota)`)
   })
 
   it('starts hidden, so an untouched page carries no empty bar', () => {

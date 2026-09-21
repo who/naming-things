@@ -3,9 +3,9 @@
  *
  * A descriptor and a style go in; a finished head-to-head comes out. Every
  * model call goes through `ApiClient`, so this module never learns whether it
- * is driving canned fixtures, a Worker proxy or someone's own key — sample mode
- * and live mode are two clients, not two code paths. Nothing here touches the
- * DOM or a Node built-in.
+ * is driving a Worker proxy or someone's own key — the hosted run and a
+ * bring-your-own-keys run are two clients, not two code paths. Nothing here
+ * touches the DOM or a Node built-in.
  */
 
 import type { ApiClient, CandidateDraft } from '../api/client'

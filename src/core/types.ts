@@ -82,8 +82,8 @@ export interface RunResult {
 /** Where a run has got to, for progressive rendering. */
 export type RunStage = 'candidates' | 'llmPick' | 'jevPick'
 
-/** Where a run sources its answers from. */
-export type RunMode = 'sample' | 'live' | 'byo'
+/** Where a run sources its answers from, or that it has nowhere to source them. */
+export type RunMode = 'live' | 'byo' | 'unconfigured'
 
 /**
  * The starting style: camelCase, domain nouns, every weight balanced.

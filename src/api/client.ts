@@ -1,9 +1,9 @@
 /**
  * The one seam every model call goes through.
  *
- * The pipeline is written against this interface and nothing else, so sample
- * mode, the Worker-proxied live mode and a bring-your-own-key mode are three
- * implementations rather than three branches in the run logic. Nothing here
+ * The pipeline is written against this interface and nothing else, so the
+ * Worker-proxied live mode and a bring-your-own-key mode are two
+ * implementations rather than two branches in the run logic. Nothing here
  * mentions HTTP, keys or the DOM.
  */
 
@@ -45,9 +45,9 @@ export interface LlmPickInput {
  * over that same material. `generateDescriptor` sits outside all of that — it
  * answers the Randomize button, before there is a run to speak of, and takes
  * the prose currently on screen only so the next brief is visibly a new one.
- * It lives on this interface rather than beside the bank because a mode that
- * can ask a model for a brief and one that can only shuffle canned prose are
- * the same two implementations the run calls already distinguish between.
+ * It lives on this interface rather than beside the bank because the brief is
+ * model output like everything else on the page, and a button that reached
+ * around this seam would be the one call a mode could not account for.
  */
 export interface ApiClient {
   generateCandidates(input: GenerateCandidatesInput): Promise<CandidateDraft>

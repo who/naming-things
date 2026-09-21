@@ -1,11 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { ByoKeys } from '../../src/api/byo'
-import type { ApiClient } from '../../src/api/client'
-import { withSampleFallback, type FallbackListener } from '../../src/api/mode'
 import { LiveCallError, RemoteApiClient } from '../../src/api/remote'
 import { DEFAULT_VAL, type Candidate, type JevState } from '../../src/core/types'
-import { SAMPLE_RUN } from '../../src/fixtures/sampleRun'
 
 /** Written with a trailing slash on purpose: a base pasted from an address bar has one. */
 const BASE_URL = 'https://naming-things-worker.example.workers.dev/'
@@ -425,71 +422,5 @@ describe('RemoteApiClient, with the visitor’s own keys', () => {
     await expect(new RemoteApiClient(KEYS).jevChoice(STATE)).rejects.toMatchObject({
       reason: 'provider error',
     })
-  })
-})
-
-describe('withSampleFallback', () => {
-  it('serves the canned run under the descriptor that was actually typed', async () => {
-    const reasons: string[] = []
-    const listener: FallbackListener = (reason) => reasons.push(reason)
-    const client = withSampleFallback(worker(), listener)
-
-    useTransport(refuses(429, 'quota_exceeded'))
-
-    const draft = await client.generateCandidates({ descriptor: DESCRIPTOR, val: DEFAULT_VAL() })
-
-    expect(draft.descriptor).toBe(DESCRIPTOR)
-    expect(draft.code).toBe(SAMPLE_RUN.code)
-    expect(reasons).toEqual(['quota exceeded'])
-  })
-
-  it('falls back once for a run, not once per call', async () => {
-    const reasons: string[] = []
-    const listener: FallbackListener = (reason) => reasons.push(reason)
-    const client = withSampleFallback(worker(), listener)
-
-    useTransport(refuses(503, 'jev_unconfigured'))
-
-    const draft = await client.generateCandidates({ descriptor: DESCRIPTOR, val: DEFAULT_VAL() })
-    const pick = await client.llmPick({
-      descriptor: draft.descriptor,
-      code: draft.code,
-      candidates: draft.candidates,
-    })
-    const jev = await client.jevChoice({ ...STATE, candidates: draft.candidates })
-
-    expect(pick.name).toBe(SAMPLE_RUN.llm.name)
-    expect(jev.choice).toBe(SAMPLE_RUN.jev.choice)
-    expect(reasons).toEqual(['service unavailable'])
-    // The two calls after the first never reached the transport at all.
-    expect(calls).toHaveLength(1)
-  })
-
-  it('lets a failure that is not a live one through, rather than burying it', async () => {
-    const broken: ApiClient = {
-      generateCandidates: () => Promise.reject(new Error('a bug in this app')),
-      llmPick: () => Promise.reject(new Error('a bug in this app')),
-      jevChoice: () => Promise.reject(new Error('a bug in this app')),
-      generateDescriptor: () => Promise.reject(new Error('a bug in this app')),
-    }
-
-    await expect(
-      withSampleFallback(broken).generateCandidates({
-        descriptor: DESCRIPTOR,
-        val: DEFAULT_VAL(),
-      }),
-    ).rejects.toThrow('a bug in this app')
-  })
-
-  it('carries on when the listener it was given throws', async () => {
-    const client = withSampleFallback(worker(), () => {
-      throw new Error('a broken banner')
-    })
-
-    useTransport(offline())
-
-    await expect(
-      client.generateCandidates({ descriptor: DESCRIPTOR, val: DEFAULT_VAL() }),
-    ).resolves.toMatchObject({ descriptor: DESCRIPTOR, code: SAMPLE_RUN.code })
   })
 })

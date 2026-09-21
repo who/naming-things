@@ -14,6 +14,7 @@
  */
 
 import type { Candidate, JevPick, LlmPick, RunResult, RunStage } from '../core/types'
+import { visitorMessage } from './banner'
 import type { UiRefs } from './dom'
 
 /** The heading each badge carries, so a failure is still labelled with its side. */
@@ -295,14 +296,21 @@ export function setStageLoading(refs: UiRefs, stage: RunStage, loading: boolean)
  * Show why a side went missing, in the place its answer would have been.
  *
  * Only the two picks can fail this way: losing the candidates ends the run
- * outright, so there is nothing to draw in their place.
+ * outright, so there is nothing to draw in their place. The wording is the
+ * error strip's, not the failure's own: a badge sitting beside a live pick is
+ * read as closely as the pick is, and an upstream sentence rendered there would
+ * be the one place a visitor is shown text nobody wrote for them.
  */
 export function renderStageError(
   refs: UiRefs,
   stage: Exclude<RunStage, 'candidates'>,
   error: Error,
 ): void {
-  renderFailure(stageRegion(refs, stage), stage === 'llmPick' ? LLM_TITLE : JEV_TITLE, error.message)
+  renderFailure(
+    stageRegion(refs, stage),
+    stage === 'llmPick' ? LLM_TITLE : JEV_TITLE,
+    visitorMessage(error),
+  )
 }
 
 /**

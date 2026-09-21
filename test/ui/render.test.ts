@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import INDEX_HTML from '../../index.html?raw'
+import { LiveCallError } from '../../src/api/remote'
 import { DEFAULT_VAL, type Candidate, type RunResult } from '../../src/core/types'
-import { SAMPLE_RUN } from '../../src/fixtures/sampleRun'
+import { SAMPLE_RUN } from '../fixtures/sampleRun'
+import { RUN_BUSY } from '../../src/ui/banner'
 import { queryRefs, type UiRefs } from '../../src/ui/dom'
 import {
   clearResults,
@@ -236,10 +238,27 @@ describe('renderStageError', () => {
 
   it('replaces a stale answer rather than leaving it standing', () => {
     renderJevPick(refs, { ...SAMPLE_RUN.jev }, sampleCandidates())
-    renderStageError(refs, 'jevPick', new Error('jev choice timed out'))
+    renderStageError(refs, 'jevPick', new LiveCallError('quota exceeded'))
 
     expect(refs.jevPick.textContent).not.toContain(SAMPLE_RUN.jev.choice)
-    expect(refs.jevPick.querySelector('.pick-error')?.textContent).toBe('jev choice timed out')
+    expect(refs.jevPick.querySelector('.pick-error')?.textContent).toBe(RUN_BUSY)
+  })
+
+  /**
+   * The badge says what the strip would say, and no more.
+   *
+   * A side that went missing is the one place an upstream sentence could reach
+   * the page through a region a visitor reads as closely as a pick: "quota
+   * exceeded" is this app's vocabulary for its own console, and the four
+   * reasons behind it are one situation to whoever is waiting.
+   */
+  it('shows the busy line for a live failure and never its own text', () => {
+    renderStageError(refs, 'llmPick', new LiveCallError('network error'))
+
+    const shown = refs.llmPick.querySelector('.pick-error')?.textContent
+
+    expect(shown).toBe(RUN_BUSY)
+    expect(shown).not.toContain('network error')
   })
 
   it('clears the failure the next time that side answers', () => {

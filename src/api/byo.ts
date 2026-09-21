@@ -36,7 +36,7 @@ const MAX_KEY_LENGTH = 512
  *
  * An empty string is absence, not a key: a half-filled entry left behind by a
  * cleared field would otherwise send an empty credential to a provider and
- * collect a 401 where sample mode was the honest answer.
+ * collect a 401 where the deployment's own path was still there to be used.
  */
 function readKey(fields: Record<string, unknown>, field: string): string | null {
   const value = fields[field]
@@ -54,10 +54,11 @@ function readKey(fields: Record<string, unknown>, field: string): string | null 
  * The stored pair, or nothing at all.
  *
  * Both keys are required together because a run is a head-to-head: one key
- * would put a live judge beside a canned one and call the two comparable. A
+ * would put a live judge beside a silent one and call the two comparable. A
  * deployment can serve half a run, since its two routes fail independently and
  * say which one went quiet; a browser holding one key cannot say anything of
- * the sort, so it stays in sample mode until it holds both.
+ * the sort, so this store is ignored until it holds both and the page runs
+ * through the deployment instead.
  */
 export function loadByoKeys(): ByoKeys | null {
   let stored: string | null = null

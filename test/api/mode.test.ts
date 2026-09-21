@@ -2,20 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { loadByoKeys, type ByoKeys } from '../../src/api/byo'
 import { createClient, readModeSources, resolveMode, type ModeSources } from '../../src/api/mode'
-import type { FallbackReason } from '../../src/api/remote'
-import { describesSampleRun, SampleApiClient } from '../../src/api/sample'
-import { DESCRIPTOR_BANK } from '../../src/core/descriptors'
-import { DEFAULT_VAL } from '../../src/core/types'
-import { SAMPLE_RUN } from '../../src/fixtures/sampleRun'
+import { LiveCallError, RemoteApiClient } from '../../src/api/remote'
 
 const STORAGE_KEY = 'naming-things:keys'
 
 const BASE_URL = 'https://naming-things-worker.example.workers.dev'
 
 const KEYS: ByoKeys = { anthropicKey: 'local-anthropic-key', typesafeKey: 'local-typesafe-key' }
-
-/** Prose the courier fixture is plainly not about. */
-const EDITED_DESCRIPTOR = 'A gym class booking. A member holds a slot until the class starts.'
 
 /** Only the one method this module ever reaches for. */
 interface TestStorage {
@@ -71,12 +64,12 @@ describe('resolveMode', () => {
     expect(resolveMode(sources(BASE_URL, null))).toBe('live')
   })
 
-  it('falls to sample when nothing is configured', () => {
-    expect(resolveMode(sources('', null))).toBe('sample')
+  it('is unconfigured when neither a key nor an origin is there', () => {
+    expect(resolveMode(sources('', null))).toBe('unconfigured')
   })
 
   it('reads a whitespace-only base URL as no base URL at all', () => {
-    expect(resolveMode(sources('   ', null))).toBe('sample')
+    expect(resolveMode(sources('   ', null))).toBe('unconfigured')
   })
 })
 
@@ -141,79 +134,54 @@ describe('readModeSources', () => {
 })
 
 describe('createClient', () => {
-  it('hands back the canned client, unwrapped, in sample mode', () => {
-    const resolved = createClient(undefined, sources('', null))
+  /**
+   * The case the whole page hangs on: a build with nowhere to send a call.
+   *
+   * There is no stand-in behind this branch any more, and the absence is what
+   * the test is for. A client here — any client — would be ten names no model
+   * wrote, served under a visitor's own prose by a deployment that was never
+   * finished, and nothing further down the page could tell the difference.
+   */
+  it('has no client at all for an unconfigured build', () => {
+    const resolved = createClient(sources('', null))
 
-    expect(resolved.mode).toBe('sample')
-    expect(resolved.client).toBeInstanceOf(SampleApiClient)
+    expect(resolved.mode).toBe('unconfigured')
+    expect(resolved.client).toBeNull()
   })
 
-  it('wraps a live client when a Worker is configured', () => {
-    const resolved = createClient(undefined, sources(BASE_URL, null))
+  it('serves a live client when a Worker is configured', () => {
+    const resolved = createClient(sources(BASE_URL, null))
 
     expect(resolved.mode).toBe('live')
-    expect(resolved.client).not.toBeInstanceOf(SampleApiClient)
+    expect(resolved.client).toBeInstanceOf(RemoteApiClient)
   })
 
-  it('wraps a byo client when this browser holds its own keys', () => {
-    const resolved = createClient(undefined, sources(BASE_URL, KEYS))
+  it('serves a byo client when this browser holds its own keys', () => {
+    const resolved = createClient(sources(BASE_URL, KEYS))
 
     expect(resolved.mode).toBe('byo')
-    expect(resolved.client).not.toBeInstanceOf(SampleApiClient)
-  })
-
-  /**
-   * The mismatch the banner is built on, checked where the page sees it.
-   *
-   * Sample mode answers a gym class with parcel weights, because that is the
-   * only run it has. What must not happen is that going unsaid, so the draft it
-   * returns has to remain something the descriptor check can call canned.
-   */
-  it('answers unrelated prose with the fixture, and the run stays detectably canned', async () => {
-    const resolved = createClient(undefined, sources('', null))
-
-    const draft = await resolved.client.generateCandidates({
-      descriptor: EDITED_DESCRIPTOR,
-      val: DEFAULT_VAL(),
-    })
-
-    expect(resolved.mode).toBe('sample')
-    expect(draft.candidates.map((candidate) => candidate.name)).toEqual(
-      SAMPLE_RUN.candidates.map((candidate) => candidate.name),
-    )
-    expect(describesSampleRun(draft.descriptor)).toBe(false)
+    expect(resolved.client).toBeInstanceOf(RemoteApiClient)
   })
 })
 
 /**
  * Randomize, at the seam where a mode decides what it can do.
  *
- * The button reaches a model in the two live modes and the local bank in sample
- * mode, and the wrapper in between turns a live path that cannot answer into
- * the second of those. What must not happen is a visitor clicking Randomize and
- * getting nothing, whichever of the three they are in.
+ * The button reaches a model or it reaches nothing. A live path that cannot
+ * answer says so by refusing, which is what leaves the prose already in the box
+ * standing and the busy line above it — as against a brief quietly dealt from
+ * somewhere else and presented as the model's.
  */
 describe('generateDescriptor', () => {
-  it('deals from the bank in sample mode, avoiding the brief on screen', async () => {
-    const resolved = createClient(undefined, sources('', null))
-    const onScreen = DESCRIPTOR_BANK[0]
-
-    const next = await resolved.client.generateDescriptor(onScreen)
-
-    expect(DESCRIPTOR_BANK).toContain(next)
-    expect(next).not.toBe(onScreen)
-  })
-
-  it('falls back to the bank, and says why, when the live path cannot answer', async () => {
-    const reasons: FallbackReason[] = []
-    const resolved = createClient((reason) => reasons.push(reason), sources(BASE_URL, null))
+  it('refuses, rather than substituting, when the live path cannot answer', async () => {
+    const resolved = createClient(sources(BASE_URL, null))
 
     useOfflineTransport()
 
-    const next = await resolved.client.generateDescriptor()
-
     expect(resolved.mode).toBe('live')
-    expect(DESCRIPTOR_BANK).toContain(next)
-    expect(reasons).toEqual(['network error'])
+    await expect(resolved.client?.generateDescriptor()).rejects.toMatchObject({
+      reason: 'network error',
+    })
+    await expect(resolved.client?.generateDescriptor()).rejects.toBeInstanceOf(LiveCallError)
   })
 })

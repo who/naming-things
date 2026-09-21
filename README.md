@@ -11,7 +11,9 @@ descriptor ──► five candidates + tiny interface sketch
                    optional val (style weights)
 ```
 
-Sample mode needs **no keys**. Live mode goes through a Cloudflare Worker that holds secrets.
+Every run is a live run. The hosted page goes through a Cloudflare Worker that holds the
+secrets; a local page can spend its own keys instead. There are no canned answers behind
+either: a call that will not answer says so.
 
 - Live Worker: `https://naming-things.who-cf.workers.dev`
 - Live demo: `https://who.github.io/naming-things/`
@@ -51,14 +53,10 @@ sequenceDiagram
 
   You->>Page: descriptor + optional val
   Page->>API: generateCandidates
-  alt sample
-    API-->>Page: fixture sketch + 5 props
-  else live
-    API->>W: POST /api/llm/candidates
-    W->>LLM: tool-forced JSON
-    LLM-->>W: sketch + candidates
-    W-->>API: result
-  end
+  API->>W: POST /api/llm/candidates
+  W->>LLM: tool-forced JSON
+  LLM-->>W: sketch + candidates
+  W-->>API: result
   par LLM judge
     Page->>API: llmPick
     API->>W: POST /api/llm/pick
@@ -94,9 +92,8 @@ Re-ask Jev
 naming-things/
 ├── src/
 │   ├── core/          # pipeline, parser, types — no DOM, no network
-│   ├── api/           # ApiClient: sample | remote (Worker) | byo
-│   ├── ui/            # cards, banner, val controls, state JSON
-│   └── fixtures/      # canned head-to-head for zero-key demos
+│   ├── api/           # ApiClient: remote (Worker) | byo
+│   └── ui/            # cards, banner, val controls, state JSON
 ├── worker/            # Cloudflare Worker — only place secrets live
 │   ├── src/           # cors, llm, jev, ratelimit, router
 │   └── wrangler.toml
@@ -120,14 +117,14 @@ naming-things/
 resolveMode()
   if localStorage naming-things:keys has both keys → byo
   else if VITE_API_BASE set at build               → remote (Worker)
-  else                                              → sample
+  else                                              → unconfigured
 ```
 
 | Mode | Keys | Where calls go |
 |------|------|----------------|
-| sample | none | fixtures |
 | remote | Worker secrets | `VITE_API_BASE` → Worker |
 | byo | both keys in `localStorage` | browser → Anthropic + TypeSafe |
+| unconfigured | none | nowhere — the page says so and the buttons stay down |
 
 **Public demo = remote only.** Never paste keys into the hosted page.
 
@@ -167,7 +164,7 @@ StyleVal
 +  val          # from the style controls / localStorage
 ```
 
-Push `explicitUnits` up, hit **Re-ask Jev**, watch `weight` lose to `weightGrams` on the sample run.
+Push `explicitUnits` up, hit **Re-ask Jev**, and watch a short name lose to one that carries its unit.
 
 ---
 
@@ -217,4 +214,4 @@ Caps (wrangler vars): `IP_DAILY_LIMIT=20` · `GLOBAL_DAILY_LIMIT=300`
 
 ## Limitations
 
-One property per run. Sample vs live can disagree with each other and with you — that disagreement is the point. Rate-limit / provider failures latch the run to sample and name the reason in the banner.
+One property per run. The two judges can disagree with each other and with you — that disagreement is the point. A rate-limit or provider failure ends the run and says the service is busy; nothing is filled in from a fixture in its place.

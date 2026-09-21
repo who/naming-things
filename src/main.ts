@@ -2,20 +2,11 @@ import './ui/styles.css'
 
 import type { ApiClient } from './api/client'
 import { createClient } from './api/mode'
-import type { FallbackReason } from './api/remote'
-import { describesSampleRun } from './api/sample'
 import { pickRandomDescriptor } from './core/descriptors'
 import { buildJevState, reaskJev, runPipeline, type RunStageEvent } from './core/pipeline'
-import type { Candidate, RunMode, RunResult, RunStage, StyleVal } from './core/types'
+import type { Candidate, RunResult, RunStage, StyleVal } from './core/types'
 import { setActivityWaiting } from './ui/activityCard'
-import {
-  CANNED_MISMATCH,
-  clearError,
-  RANDOMIZE_BUSY,
-  setModeBanner,
-  showBusy,
-  showError,
-} from './ui/banner'
+import { clearError, RANDOMIZE_BUSY, setModeBanner, showBusy, showError } from './ui/banner'
 import { queryRefs, type UiRefs } from './ui/dom'
 import {
   clearResults,
@@ -52,46 +43,6 @@ function showStatePayload(refs: UiRefs, run: RunResult, val: StyleVal): void {
       val,
     }),
   )
-}
-
-/**
- * Name what the run on the page actually is.
- *
- * Canned answers reach a visitor two ways — sample mode, where there was never
- * a key, and a live run that fell back mid-flight — and to whoever is reading
- * the cards those are the same claim: ten names that came out of a fixture
- * rather than out of a model that read the box. Both land under the sample
- * copy, with the fallback reason kept alongside so a quota stop still reads as
- * a quota stop.
- *
- * The mismatch note is added only when the prose on the page is not the prose
- * the fixture was written about. Someone running the courier example in sample
- * mode is being answered about the thing they asked about, and warning them off
- * a result that happens to be correct would be its own small dishonesty.
- */
-function announceRun(
-  refs: UiRefs,
-  mode: RunMode,
-  fallback: FallbackReason | null,
-  descriptor: string,
-): void {
-  if (mode !== 'sample' && fallback === null) {
-    setModeBanner(refs, mode)
-
-    return
-  }
-
-  const notes: string[] = []
-
-  if (fallback !== null) {
-    notes.push(fallback)
-  }
-
-  if (!describesSampleRun(descriptor)) {
-    notes.push(CANNED_MISMATCH)
-  }
-
-  setModeBanner(refs, 'sample', notes.length === 0 ? undefined : notes.join('; '))
 }
 
 /**
@@ -193,34 +144,44 @@ async function executeReask(
  * Hydrate the page shell: resolve the element contract, seed the descriptor
  * box, mount the style controls, and wire Randomize, Run and Re-ask Jev.
  *
- * Randomize goes through the same client Run does, so a page with a model
- * behind it writes a fresh brief instead of dealing another card off the local
- * bank, and a page without one deals from the bank exactly as before. It never
- * starts a run, though it does end one: the cards, the badges and the verdict
- * all answered the brief being replaced, so they come down with it and the new
+ * Randomize goes through the same client Run does, so the brief is written by
+ * the same model that will be asked to name things in it. It never starts a
+ * run, though it does end one: the cards, the badges and the verdict all
+ * answered the brief being replaced, so they come down with it and the new
  * prose sits alone in the box until the visitor asks for names for it.
  *
  * Run goes through whichever client this build and this browser add up to, and
- * through the fallback behind it, so the page works with no key and no network
- * and says which of those it is doing. The style the controls hold is the one
- * the next run carries, and moving a control after a run rewrites the visible
- * payload so the change is readable before Jev is ever asked again. Re-ask Jev
- * then spends that style on a second opinion over the same ten cards, so it
- * stays disabled until a run has left something on the page worth re-asking
- * about. The state viewer is wired here too, and stays shut and unopenable
+ * through nothing else: a call that will not answer leaves the regions empty
+ * under a line saying so, because the alternative is a page that shows names no
+ * model chose. A build with no client at all never gets this far. The style the
+ * controls hold is the one the next run carries, and moving a control after a
+ * run rewrites the visible payload so the change is readable before Jev is ever
+ * asked again. Re-ask Jev then spends that style on a second opinion over the
+ * same ten cards, so it stays disabled until a run has left something on the
+ * page worth re-asking about. The state viewer is wired here too, and stays shut and unopenable
  * until a run has built a payload worth opening it for.
  */
 export function bootstrap(doc: Document = document): UiRefs {
   const refs = queryRefs(doc)
-  let fallback: FallbackReason | null = null
-  const { client, mode } = createClient((reason) => {
-    // A live run that dropped to canned answers has to say so where the mode is
-    // already named. One fixed disagreement read as a live one is the demo
-    // claiming something it did not do. The reason is kept rather than just
-    // shown, because every run after this one comes from the fixture too.
-    fallback = reason
-    announceRun(refs, mode, fallback, refs.descriptor.value)
-  })
+  const { client, mode } = createClient()
+
+  setModeBanner(refs, mode)
+  mountStateModal(refs)
+  // The first brief comes from the bank in every mode: a page that spent a
+  // round trip before the visitor had asked for anything would be slower to
+  // read and would charge a deployment for a brief nobody requested.
+  refs.descriptor.value = pickRandomDescriptor()
+
+  if (client === null) {
+    // Nothing to ask, so nothing to offer. Randomize goes down with the other
+    // two — it is a model call like the rest — and the banner above carries the
+    // whole explanation. A build that reached this branch is missing its API
+    // origin, which is a deployment to fix rather than a page to work around.
+    refs.randomize.disabled = true
+
+    return refs
+  }
+
   let running = false
   let randomizing = false
   let val = loadVal()
@@ -243,9 +204,6 @@ export function bootstrap(doc: Document = document): UiRefs {
     refs.reaskJev.disabled = true
   }
 
-  setModeBanner(refs, mode)
-  mountStateModal(refs)
-
   mountValControls(refs.valControls, val, (next) => {
     val = next
 
@@ -263,10 +221,6 @@ export function bootstrap(doc: Document = document): UiRefs {
     }
   })
 
-  // The first brief comes from the bank in every mode: a page that spent a
-  // round trip before the visitor had asked for anything would be slower to
-  // read and would charge a deployment for a brief nobody requested.
-  refs.descriptor.value = pickRandomDescriptor()
   refs.randomize.addEventListener('click', () => {
     // The same guard Run uses. A second click while the first is still in
     // flight would race two briefs into one box, and the later answer is not
@@ -331,10 +285,6 @@ export function bootstrap(doc: Document = document): UiRefs {
     void executeRun(refs, client, val)
       .then((result) => {
         lastRun = result
-        // Said once the cards exist, and against the prose the run actually
-        // used: a box edited while the run was in flight describes the next
-        // run, not the one being announced.
-        announceRun(refs, mode, fallback, result.descriptor)
       })
       .catch((reason: unknown) => {
         // A refused descriptor or a lost draft leaves the regions empty, so the

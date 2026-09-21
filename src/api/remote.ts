@@ -9,13 +9,13 @@
  * validated result.
  *
  * Nothing that arrives is trusted, wherever it came from. Candidates go through
- * the same parser the canned run uses, a pick has to name one of the ten that
- * were actually offered, and a probability has to be a number in range. And
- * nothing that fails leaves this module as a transport error: every failure is
- * classified into one of four short reasons, because the only thing the page
- * can do with a failed live call is say why it is showing canned answers
- * instead — and "quota exceeded" and "network error" are different sentences to
- * whoever is reading the banner.
+ * the page's own parser, a pick has to name one of the ten that were actually
+ * offered, and a probability has to be a number in range. And nothing that
+ * fails leaves this module as a transport error: every failure is classified
+ * into one of four short reasons, so a caller can tell a quota that resets
+ * tomorrow from a provider having a bad minute without reading prose — which is
+ * a distinction the console keeps even though the page says only that it is
+ * busy.
  */
 
 import { CANDIDATE_COUNT, parseCandidates } from '../core/parseCandidates'
@@ -74,8 +74,8 @@ const JEV_ROUTE = '/api/jev/choice'
  *
  * The Worker spells one per route — a missing LLM key, a missing Jev key, a
  * missing counter namespace — and all three mean the same thing here: the live
- * path is off, not broken, and sample mode is the honest answer rather than a
- * failure to report.
+ * path is off rather than broken, which is a deployment to finish and not a bad
+ * minute to wait out.
  */
 const UNCONFIGURED_SUFFIX = '_unconfigured'
 
@@ -515,11 +515,11 @@ function readText(value: unknown, limit: number): string {
 /**
  * Ten well-formed candidates, or a classified refusal.
  *
- * The page's own parser, rather than a second copy of its rules: a live run and
- * a canned one have to be interchangeable to everything downstream, and two
- * rule sets that agreed today would not stay agreed. Its message is precise
- * about which candidate broke which rule, which is worth keeping in the console
- * even though the page shows the fallback reason instead.
+ * The page's own parser, rather than a second copy of its rules: the Worker's
+ * answers and a provider's have to be interchangeable to everything downstream,
+ * and two rule sets that agreed today would not stay agreed. Its message is
+ * precise about which candidate broke which rule, which is worth keeping in the
+ * console even though the page shows the busy line instead.
  */
 function readCandidates(raw: unknown): Candidate[] {
   try {

@@ -1,27 +1,28 @@
 /**
  * Which kind of run this page does, decided once at startup.
  *
- * Three modes, in one fixed order. Stored keys win, because someone who put
- * their own credentials in this browser meant to spend them rather than a
- * deployment's. A build-time Worker origin comes next, which is the hosted
- * demo's whole path. Sample is what is left, and it is never a failure: the
- * page works with no key, no network and no configuration at all.
+ * Two modes that can run and one that cannot. Stored keys win, because someone
+ * who put their own credentials in this browser meant to spend them rather than
+ * a deployment's. A build-time Worker origin comes next, which is the hosted
+ * demo's whole path. A build with neither is unconfigured, and is named as
+ * such: there is nothing behind this page to answer with, so a page that cannot
+ * reach a model has to say so rather than find something else to show.
  *
  * `VITE_API_BASE` is a URL and nothing else. It is inlined into the bundle by
  * the build, which is exactly why it must stay a non-secret: a credential read
  * from `import.meta.env` would be shipped to every visitor as source, and no
  * amount of care further down would take it back out again.
  *
- * The client this module hands back is wrapped, not bare. A live path that
- * fails mid-run drops to the canned answers and says why, so a quota stop or a
- * bad minute upstream costs the visitor an explanation rather than a dead page.
+ * The client handed back is the live one, bare. A live call that fails is a
+ * live call that failed, and the page says the service is busy rather than
+ * quietly answering out of a fixture: ten names no model wrote, sitting under
+ * the prose a visitor typed, are a result the page did not produce.
  */
 
 import type { RunMode } from '../core/types'
 import { loadByoKeys, type ByoKeys } from './byo'
 import type { ApiClient } from './client'
-import { LiveCallError, RemoteApiClient, type FallbackReason, type RemoteTarget } from './remote'
-import { SampleApiClient } from './sample'
+import { RemoteApiClient, type RemoteTarget } from './remote'
 
 /** Everything the decision is made from, so it can be made without a browser. */
 export interface ModeSources {
@@ -29,14 +30,11 @@ export interface ModeSources {
   keys: ByoKeys | null
 }
 
-/** The resolved mode, and the client that serves it. */
+/** The resolved mode, and the client that serves it — or nothing, when none can. */
 export interface ResolvedClient {
   mode: RunMode
-  client: ApiClient
+  client: ApiClient | null
 }
-
-/** How a caller hears that this run dropped to canned answers, and why. */
-export type FallbackListener = (reason: FallbackReason) => void
 
 /**
  * The Worker origin this build was configured with, or the empty string.
@@ -67,94 +65,18 @@ export function resolveMode(sources: ModeSources): RunMode {
     return 'byo'
   }
 
-  return sources.baseUrl.trim() === '' ? 'sample' : 'live'
+  return sources.baseUrl.trim() === '' ? 'unconfigured' : 'live'
 }
 
-/** Where a mode sends its calls, or nothing when it does not send any. */
+/** Where a mode sends its calls, or nothing when it has nowhere to send them. */
 function targetFor(mode: RunMode, sources: ModeSources): RemoteTarget | null {
   switch (mode) {
     case 'byo':
       return sources.keys
     case 'live':
       return sources.baseUrl
-    case 'sample':
+    case 'unconfigured':
       return null
-  }
-}
-
-/**
- * Put the canned run behind a live one, once and permanently.
- *
- * The latch is the point. A run makes three calls, and a Worker that is out of
- * quota is out of quota for all three: retrying each one would spend three
- * round trips to reach the same canned answer and announce the same reason
- * three times over. The first classified failure switches this client over for
- * good, so the rest of that run — and the re-ask after it — comes straight from
- * the fixture with one banner explaining all of it.
- *
- * Only a classified live failure falls back. Anything else is a bug in this
- * app rather than a bad day upstream, and burying it under canned answers would
- * hide it from the one surface that would have shown it.
- */
-export function withSampleFallback(live: ApiClient, onFallback?: FallbackListener): ApiClient {
-  const canned = new SampleApiClient()
-  let fellBack = false
-
-  const announce = (reason: FallbackReason): void => {
-    fellBack = true
-
-    if (onFallback === undefined) {
-      return
-    }
-
-    // A listener is a UI detail, and a bug in one must not take down the run
-    // it was called to explain.
-    try {
-      onFallback(reason)
-    } catch {
-      /* the fallback outlives a broken listener */
-    }
-  }
-
-  const attempt = async <T>(call: () => Promise<T>, fallback: () => Promise<T>): Promise<T> => {
-    if (fellBack) {
-      return fallback()
-    }
-
-    try {
-      return await call()
-    } catch (reason: unknown) {
-      if (!(reason instanceof LiveCallError)) {
-        throw reason
-      }
-
-      announce(reason.reason)
-
-      return fallback()
-    }
-  }
-
-  return {
-    generateCandidates: (input) =>
-      attempt(
-        () => live.generateCandidates(input),
-        // The same input, so the descriptor on the cards is still the one that
-        // was typed: a fallback that quietly swapped in the fixture's prose
-        // would read as the page having ignored the visitor.
-        () => canned.generateCandidates(input),
-      ),
-    llmPick: (input) => attempt(() => live.llmPick(input), () => canned.llmPick(input)),
-    jevChoice: (state) => attempt(() => live.jevChoice(state), () => canned.jevChoice(state)),
-    generateDescriptor: (avoid) =>
-      attempt(
-        () => live.generateDescriptor(avoid),
-        // The bank, which is what Randomize was before there was a model behind
-        // it. The latch matters most here: a visitor clicking Randomize after
-        // the quota ran out gets a new brief immediately rather than a round
-        // trip's wait for the same refusal, and the banner has already said why
-        // the prose is canned.
-        () => canned.generateDescriptor(avoid),
-      ),
   }
 }
 
@@ -163,19 +85,14 @@ export function withSampleFallback(live: ApiClient, onFallback?: FallbackListene
  *
  * `sources` is a parameter rather than a read so the three branches can be
  * exercised without a build or a browser store; nothing but a test ever passes
- * it. Sample mode gets the canned client unwrapped, because there is nothing
- * for it to fall back to.
+ * it. An unconfigured build gets no client at all, which is the honest shape of
+ * that case: a deployment that was never given an origin has no run to offer,
+ * and a stand-in that answered anyway would be the deployment mistake hidden
+ * behind a working-looking page.
  */
-export function createClient(
-  onFallback?: FallbackListener,
-  sources: ModeSources = readModeSources(),
-): ResolvedClient {
+export function createClient(sources: ModeSources = readModeSources()): ResolvedClient {
   const mode = resolveMode(sources)
   const target = targetFor(mode, sources)
 
-  if (target === null) {
-    return { mode, client: new SampleApiClient() }
-  }
-
-  return { mode, client: withSampleFallback(new RemoteApiClient(target), onFallback) }
+  return { mode, client: target === null ? null : new RemoteApiClient(target) }
 }
