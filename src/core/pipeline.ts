@@ -145,7 +145,7 @@ export function buildJevState(input: JevStateInput): JevState {
  * rather than `Promise.all`, so a Jev outage still shows the plain model's
  * answer and vice versa; each failure is reported on its own stage and leaves a
  * blank-named pick in the result. Both sides failing still returns the
- * candidates, because five cards over an error strip beat an empty page.
+ * candidates, because ten cards over an error strip beat an empty page.
  */
 export async function runPipeline(
   client: ApiClient,
@@ -258,7 +258,7 @@ export async function runPipeline(
  * what holds both paths to the same byte budget and the same key order, and an
  * over-budget style is refused here before the call goes out.
  *
- * Nothing is regenerated: the same five candidates and the same LLM pick come
+ * Nothing is regenerated: the same ten candidates and the same LLM pick come
  * back untouched, and only the Jev answer, the style and the agreement flag are
  * new. Holding the other judge still is the point — a pick that moves when the
  * only thing that changed is `val` is the style import doing something visible.

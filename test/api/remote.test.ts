@@ -28,14 +28,24 @@ const CANDIDATES: Candidate[] = [
   { name: 'massGrams', typeHint: 'number', why: 'The physically correct word.' },
   { name: 'parcelWeight', typeHint: 'number', why: 'Says what is being weighed.' },
   { name: 'grams', typeHint: 'number', why: 'The unit, standing in for the quantity.' },
+  { name: 'parcelWeightGrams', typeHint: 'number', why: 'Says what is weighed and in what.' },
+  { name: 'weightInGrams', typeHint: 'number', why: 'Prose, with a preposition inside a key.' },
+  { name: 'netWeightGrams', typeHint: 'number', why: 'The shipping term for it.' },
+  { name: 'weightG', typeHint: 'number', why: 'The unit, abbreviated to one letter.' },
+  { name: 'depotWeight', typeHint: 'number', why: 'Names where it was weighed, not the unit.' },
 ]
 
 const PROBABILITIES = {
-  weight: 0.14,
-  weightGrams: 0.52,
-  massGrams: 0.16,
-  parcelWeight: 0.1,
-  grams: 0.08,
+  weight: 0.12,
+  weightGrams: 0.44,
+  massGrams: 0.12,
+  parcelWeight: 0.08,
+  grams: 0.06,
+  parcelWeightGrams: 0.07,
+  weightInGrams: 0.04,
+  netWeightGrams: 0.03,
+  weightG: 0.02,
+  depotWeight: 0.02,
 }
 
 const STATE: JevState = {
@@ -152,7 +162,7 @@ describe('RemoteApiClient, through the Worker', () => {
     expect(bodyOf(call)).toEqual({ descriptor: DESCRIPTOR, val: DEFAULT_VAL() })
     expect(draft.descriptor).toBe(DESCRIPTOR)
     expect(draft.code).toBe(CODE)
-    expect(draft.candidates).toHaveLength(5)
+    expect(draft.candidates).toHaveLength(10)
   })
 
   it('reads a pick, and refuses a name that was never offered', async () => {
@@ -346,7 +356,7 @@ describe('RemoteApiClient, with the visitor’s own keys', () => {
     expect(headersOf(call)['x-api-key']).toBe(KEYS.anthropicKey)
     expect(bodyOf(call).tool_choice).toEqual({ type: 'tool', name: 'propose_properties' })
     expect(draft.descriptor).toBe(DESCRIPTOR)
-    expect(draft.candidates).toHaveLength(5)
+    expect(draft.candidates).toHaveLength(10)
   })
 
   it('writes a brief through the same forced tool call', async () => {

@@ -4,8 +4,8 @@
  * The three LLM handlers with the provider replaced by a stub.
  *
  * Every case here is about what the Worker does with an answer rather than
- * about the answer itself: the five-candidate rule, the choice being one of the
- * five, a provider that is busy, and a deployment that was never given a key.
+ * about the answer itself: the ten-candidate rule, the choice being one of the
+ * ten, a provider that is busy, and a deployment that was never given a key.
  * The stub stands in for `fetch` because that is the only way out of a Worker,
  * and stubbing it keeps the suite offline and free.
  */
@@ -50,13 +50,18 @@ const UNCONFIGURED_ENV = { ALLOWED_ORIGINS: 'https://who.github.io' }
 const DESCRIPTOR = 'a saved search a visitor can re-run later'
 const CODE = 'interface SavedSearch {\n  id: string\n}'
 
-/** Five that pass every rule, so a case can break exactly one of them. */
+/** Ten that pass every rule, so a case can break exactly one of them. */
 const CANDIDATES = [
   { name: 'lastRunAt', typeHint: 'Date | null', why: 'Names the moment, and admits it may never have run.' },
   { name: 'runCount', typeHint: 'number', why: 'Counts the runs without implying when they happened.' },
   { name: 'queryText', typeHint: 'string', why: 'Says the search is prose rather than a structured filter.' },
   { name: 'isPinned', typeHint: 'boolean', why: 'Reads as a yes-or-no at the call site.' },
   { name: 'ownerId', typeHint: 'string', why: 'Identifier-shaped, so it is never read as a display name.' },
+  { name: 'workspaceId', typeHint: 'string', why: 'Scopes the search to the workspace it belongs to.' },
+  { name: 'createdAt', typeHint: 'Date', why: 'The moment the search was written, which this is not.' },
+  { name: 'scheduleId', typeHint: 'string | null', why: 'Points at the schedule, not at what it last did.' },
+  { name: 'resultCount', typeHint: 'number', why: 'Counts what came back, not what was asked for.' },
+  { name: 'isArchived', typeHint: 'boolean', why: 'Another yes-or-no, so the pair reads the same way.' },
 ]
 
 /** A brief as long as a real one, so a case can be about something other than its length. */
@@ -121,7 +126,7 @@ afterEach(() => {
 })
 
 describe('generateCandidates', () => {
-  it('returns the sketch and the five it validated', async () => {
+  it('returns the sketch and the ten it validated', async () => {
     stubFetch(() => toolResponse('propose_properties', { code: CODE, properties: CANDIDATES }))
 
     const response = await generateCandidates(candidatesBody(), ENV)
@@ -150,8 +155,8 @@ describe('generateCandidates', () => {
     expect(headers['anthropic-version']).toBe('2023-06-01')
     expect(payload.model).toBe('claude-haiku-4-5-20251001')
     expect(payload.tool_choice).toEqual({ type: 'tool', name: 'propose_properties' })
-    expect(payload.tools[0].input_schema.properties.properties.minItems).toBe(5)
-    expect(payload.tools[0].input_schema.properties.properties.maxItems).toBe(5)
+    expect(payload.tools[0].input_schema.properties.properties.minItems).toBe(10)
+    expect(payload.tools[0].input_schema.properties.properties.maxItems).toBe(10)
     expect(payload.temperature).toBe(0.7)
     expect(payload.messages[0].content).toContain(DESCRIPTOR)
   })
@@ -182,9 +187,9 @@ describe('generateCandidates', () => {
     expect(String(sentPayload(stub).messages[0].content)).not.toContain('advice and not a rule')
   })
 
-  it('refuses four candidates instead of rendering a short run', async () => {
+  it('refuses nine candidates instead of rendering a short run', async () => {
     stubFetch(() =>
-      toolResponse('propose_properties', { code: CODE, properties: CANDIDATES.slice(0, 4) }),
+      toolResponse('propose_properties', { code: CODE, properties: CANDIDATES.slice(0, 9) }),
     )
 
     const response = await generateCandidates(candidatesBody(), ENV)
@@ -194,7 +199,7 @@ describe('generateCandidates', () => {
   })
 
   it('refuses a repeated name, which would collide as a Jev option key', async () => {
-    const repeated = [...CANDIDATES.slice(0, 4), { ...CANDIDATES[0] }]
+    const repeated = [...CANDIDATES.slice(0, 9), { ...CANDIDATES[0] }]
 
     stubFetch(() => toolResponse('propose_properties', { code: CODE, properties: repeated }))
 
@@ -205,7 +210,7 @@ describe('generateCandidates', () => {
   })
 
   it('refuses a name that is not a JavaScript identifier', async () => {
-    const punctuated = [...CANDIDATES.slice(0, 4), { ...CANDIDATES[4], name: 'owner id' }]
+    const punctuated = [...CANDIDATES.slice(0, 9), { ...CANDIDATES[9], name: 'is archived' }]
 
     stubFetch(() => toolResponse('propose_properties', { code: CODE, properties: punctuated }))
 
@@ -302,7 +307,7 @@ describe('pickBest', () => {
     expect(sentPayload(stub).temperature).toBe(0)
   })
 
-  it('offers the sketch and all five names to choose between', async () => {
+  it('offers the sketch and all ten names to choose between', async () => {
     const stub = stubFetch(() =>
       toolResponse('choose_name', { name: 'ownerId', reason: 'Identifier-shaped.' }),
     )
@@ -338,7 +343,7 @@ describe('pickBest', () => {
     await expect(response.json()).resolves.toEqual({ error: 'llm_bad_response' })
   })
 
-  it('refuses a request whose candidates are not five valid ones', async () => {
+  it('refuses a request whose candidates are not ten valid ones', async () => {
     const stub = stubFetch(() =>
       toolResponse('choose_name', { name: 'lastRunAt', reason: 'It names the moment.' }),
     )

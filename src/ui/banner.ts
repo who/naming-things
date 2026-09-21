@@ -35,7 +35,7 @@ const MODE_COPY: Record<RunMode, string | null> = {
 /**
  * What a canned run owes a visitor who asked about something else.
  *
- * The fixture is one courier job, and its five names are about that job. A page
+ * The fixture is one courier job, and its ten names are about that job. A page
  * that answers a question about gym classes with parcel weights and says
  * nothing is claiming a result it did not produce — so the mismatch goes in the
  * strip that already names the kind of run this was, rather than being left for

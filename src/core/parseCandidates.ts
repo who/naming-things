@@ -1,8 +1,8 @@
 /**
  * The gate between model output and the cards.
  *
- * A head-to-head over four options is not the demo, so this module fails
- * closed: either the model produced exactly five well-formed candidates, or
+ * A head-to-head over nine options is not the demo, so this module fails
+ * closed: either the model produced exactly ten well-formed candidates, or
  * the run is an error the UI can name. Nothing here touches the network or the
  * DOM, so the browser and the Cloudflare Worker can both apply the same rules
  * to the same payload.
@@ -10,8 +10,15 @@
 
 import type { Candidate } from './types'
 
-/** How many candidates one run must yield. Any other count is an error. */
-const REQUIRED_COUNT = 5
+/**
+ * How many candidates one run must yield. Any other count is an error.
+ *
+ * Exported because the count is a fact about the run rather than about this
+ * parser: the prompt that asks for the names and the tool schema that shapes
+ * them are written from the same number, and a second copy of it is a second
+ * chance for the ask and the gate to drift apart.
+ */
+export const CANDIDATE_COUNT = 10
 
 /** A leading letter or underscore, then letters, digits or underscores. */
 const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/
@@ -23,7 +30,7 @@ const MAX_TYPE_HINT_LENGTH = 24
 const MAX_WHY_LENGTH = 140
 
 /**
- * Raised when model output cannot become five well-formed candidates.
+ * Raised when model output cannot become ten well-formed candidates.
  *
  * The message names the offending index and the rule it broke, so the error
  * surface can show something more useful than "parsing failed".
@@ -53,7 +60,7 @@ function readString(entry: Record<string, unknown>, field: string, index: number
 }
 
 /**
- * Validate raw model output into exactly five candidates, or throw.
+ * Validate raw model output into exactly ten candidates, or throw.
  *
  * Names must be usable as property keys and as Jev choice option keys, which
  * is why they are checked against the identifier shape and rejected on an
@@ -65,9 +72,9 @@ export function parseCandidates(raw: unknown): Candidate[] {
     throw new CandidateParseError('candidates must be an array')
   }
 
-  if (raw.length !== REQUIRED_COUNT) {
+  if (raw.length !== CANDIDATE_COUNT) {
     throw new CandidateParseError(
-      `candidates must hold exactly ${REQUIRED_COUNT} items, not ${raw.length}`,
+      `candidates must hold exactly ${CANDIDATE_COUNT} items, not ${raw.length}`,
     )
   }
 

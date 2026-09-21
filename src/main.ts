@@ -59,7 +59,7 @@ function showStatePayload(refs: UiRefs, run: RunResult, val: StyleVal): void {
  *
  * Canned answers reach a visitor two ways — sample mode, where there was never
  * a key, and a live run that fell back mid-flight — and to whoever is reading
- * the cards those are the same claim: five names that came out of a fixture
+ * the cards those are the same claim: ten names that came out of a fixture
  * rather than out of a model that read the box. Both land under the sample
  * copy, with the fallback reason kept alongside so a quota stop still reads as
  * a quota stop.
@@ -205,7 +205,7 @@ async function executeReask(
  * and says which of those it is doing. The style the controls hold is the one
  * the next run carries, and moving a control after a run rewrites the visible
  * payload so the change is readable before Jev is ever asked again. Re-ask Jev
- * then spends that style on a second opinion over the same five cards, so it
+ * then spends that style on a second opinion over the same ten cards, so it
  * stays disabled until a run has left something on the page worth re-asking
  * about. The state viewer is wired here too, and stays shut and unopenable
  * until a run has built a payload worth opening it for.
@@ -286,7 +286,7 @@ export function bootstrap(doc: Document = document): UiRefs {
     // waiting, so the box is what says so.
     setActivityWaiting(refs.descriptorShell, true)
     // Everything below the box was an answer about the brief on its way out.
-    // Five names for a courier job sitting under a description of something
+    // Ten names for a courier job sitting under a description of something
     // else is the page claiming a run it never did, so the old run goes as soon
     // as the new brief is asked for rather than whenever it happens to arrive.
     clearPreviousRun()

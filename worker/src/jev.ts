@@ -1,7 +1,7 @@
 /**
  * The Jev Choice call: the other half of the head-to-head, from the same Worker.
  *
- * One question, asked once, over the five names the run already produced.
+ * One question, asked once, over the ten names the run already produced.
  * System One answers a `choice` question with the name it picked, a confidence
  * and a probability over every option it was offered — which is the whole
  * reason the demo asks a Choice rather than a Noul or a Score: a Noul carries
@@ -22,7 +22,7 @@ import type { Env } from './cors'
  *
  * Sent in the request and compared against what the response reports, because
  * two runs a week apart are only comparable if the judge did not quietly change
- * underneath them — and the demo's entire claim is that the same five names put
+ * underneath them — and the demo's entire claim is that the same ten names put
  * to the same judge under a different style move for a reason.
  */
 const MODEL = 'jev-1.13.0'
@@ -46,8 +46,14 @@ const UPSTREAM_TIMEOUT_MS = 30000
  */
 const MAX_STATE_BYTES = 8192
 
-/** How many candidates one run puts to the judge. Any other count is not a run. */
-const CANDIDATE_COUNT = 5
+/**
+ * How many candidates one run puts to the judge. Any other count is not a run.
+ *
+ * Held here as its own copy for the reason the LLM route keeps one: the browser
+ * owns the number, the two routes reach different providers, and neither should
+ * be able to break the other by tightening a rule on its own schedule.
+ */
+const CANDIDATE_COUNT = 10
 
 /** The browser's rules for a candidate, so both runtimes agree on what one is. */
 const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/
@@ -136,14 +142,14 @@ function readText(value: unknown, limit: number): string | null {
 }
 
 /**
- * Five well-formed candidates, or nothing.
+ * Ten well-formed candidates, or nothing.
  *
  * The same rule set the LLM module applies, kept as its own copy for the same
  * reason it keeps one: the two routes reach different providers and neither
  * should be able to break the other by tightening a rule. Uniqueness is what
  * this route cares about most — candidate names become the option keys of the
- * Choice question, and two identical names would silently offer four options
- * while the page kept drawing five cards.
+ * Choice question, and two identical names would silently offer nine options
+ * while the page kept drawing ten cards.
  */
 function readCandidates(raw: unknown): Candidate[] | null {
   if (!Array.isArray(raw) || raw.length !== CANDIDATE_COUNT) {
@@ -210,7 +216,7 @@ function readState(body: Record<string, unknown>): JevState | null {
  * named, and naming them after the candidates is what lets the answer come back
  * as a property name this demo can put on a card without a lookup table. Each
  * description is the type the name implies followed by the case made for it, so
- * the judge sees exactly what a visitor reading the five cards sees.
+ * the judge sees exactly what a visitor reading the ten cards sees.
  */
 export function buildChoiceQuestion(candidates: readonly Candidate[]): ChoiceQuestion {
   const criteria: Record<string, string> = {}

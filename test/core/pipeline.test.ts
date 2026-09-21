@@ -31,6 +31,11 @@ const CANDIDATES: Candidate[] = [
   { name: 'massGrams', typeHint: 'number', why: 'The physically correct word.' },
   { name: 'parcelWeight', typeHint: 'number', why: 'Says what is being weighed.' },
   { name: 'grams', typeHint: 'number', why: 'The unit, standing in for the quantity.' },
+  { name: 'parcelWeightGrams', typeHint: 'number', why: 'Says what is weighed and in what.' },
+  { name: 'weightInGrams', typeHint: 'number', why: 'Prose, with a preposition inside a key.' },
+  { name: 'netWeightGrams', typeHint: 'number', why: 'The shipping term for it.' },
+  { name: 'weightG', typeHint: 'number', why: 'The unit, abbreviated to one letter.' },
+  { name: 'depotWeight', typeHint: 'number', why: 'Names where it was weighed, not the unit.' },
 ]
 
 const LLM_PICK: LlmPick = {
@@ -42,7 +47,18 @@ const LLM_PICK: LlmPick = {
 const JEV_PICK: JevPick = {
   choice: 'weightGrams',
   confidence: 0.71,
-  probabilities: { weight: 0.14, weightGrams: 0.52, massGrams: 0.16, parcelWeight: 0.1, grams: 0.08 },
+  probabilities: {
+    weight: 0.12,
+    weightGrams: 0.44,
+    massGrams: 0.12,
+    parcelWeight: 0.08,
+    grams: 0.06,
+    parcelWeightGrams: 0.07,
+    weightInGrams: 0.04,
+    netWeightGrams: 0.03,
+    weightG: 0.02,
+    depotWeight: 0.02,
+  },
   model: 'jev-1.13.0',
 }
 
@@ -172,7 +188,7 @@ describe('runPipeline', () => {
 
     expect(result.descriptor).toBe(DESCRIPTOR)
     expect(result.code).toBe(CODE)
-    expect(result.candidates).toHaveLength(5)
+    expect(result.candidates).toHaveLength(10)
     expect(result.llm).toEqual(LLM_PICK)
     expect(result.jev).toEqual(JEV_PICK)
     expect(result.agree).toBe(false)
@@ -225,7 +241,7 @@ describe('runPipeline', () => {
     expect(result.jev.choice).toBe('')
     expect(result.jev.confidence).toBeNull()
     expect(result.agree).toBe(false)
-    expect(result.candidates).toHaveLength(5)
+    expect(result.candidates).toHaveLength(10)
     expect(failures).toHaveLength(1)
     expect(failures[0]?.stage).toBe('jevPick')
   })
@@ -256,7 +272,7 @@ describe('runPipeline', () => {
 
     const result = await runPipeline(client, { descriptor: DESCRIPTOR, val: DEFAULT_VAL() })
 
-    expect(result.candidates).toHaveLength(5)
+    expect(result.candidates).toHaveLength(10)
     expect(result.code).toBe(CODE)
     expect(result.llm.name).toBe('')
     expect(result.jev.choice).toBe('')

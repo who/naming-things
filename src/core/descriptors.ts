@@ -6,7 +6,7 @@
  * the Jev state alongside the code and the candidates.
  *
  * Each one describes a single property rather than a product. A blurb about a
- * whole app leaves the models guessing which field is even at stake, and five
+ * whole app leaves the models guessing which field is even at stake, and ten
  * names for an unspecified thing cannot disagree about anything; a property
  * with a unit, a nullability and a job gives them something to disagree over.
  * The prose says what the value means and never what it might be called, since

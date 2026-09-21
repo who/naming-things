@@ -54,13 +54,18 @@ const MODEL = 'jev-1.13.0'
 const DESCRIPTOR = 'a saved search a visitor can re-run later'
 const CODE = 'interface SavedSearch {\n  id: string\n}'
 
-/** The five a finished run puts to the judge. */
+/** The ten a finished run puts to the judge. */
 const CANDIDATES = [
   { name: 'lastRunAt', typeHint: 'Date | null', why: 'Names the moment, and admits it may never have run.' },
   { name: 'runCount', typeHint: 'number', why: 'Counts the runs without implying when they happened.' },
   { name: 'queryText', typeHint: 'string', why: 'Says the search is prose rather than a structured filter.' },
   { name: 'isPinned', typeHint: 'boolean', why: 'Reads as a yes-or-no at the call site.' },
   { name: 'ownerId', typeHint: 'string', why: 'Identifier-shaped, so it is never read as a display name.' },
+  { name: 'workspaceId', typeHint: 'string', why: 'Scopes the search to the workspace it belongs to.' },
+  { name: 'createdAt', typeHint: 'Date', why: 'The moment the search was written, which this is not.' },
+  { name: 'scheduleId', typeHint: 'string | null', why: 'Points at the schedule, not at what it last did.' },
+  { name: 'resultCount', typeHint: 'number', why: 'Counts what came back, not what was asked for.' },
+  { name: 'isArchived', typeHint: 'boolean', why: 'Another yes-or-no, so the pair reads the same way.' },
 ]
 
 /** The imported style, which travels into the state as the visitor left it. */
@@ -73,13 +78,18 @@ const VAL = {
 /** The Worker never touches `ctx`, so the stub only has to exist. */
 const CTX = { waitUntil: () => {}, passThroughOnException: () => {} }
 
-/** A full distribution over the five, so a case can break exactly one thing. */
+/** A full distribution over the ten, so a case can break exactly one thing. */
 const PROBABILITIES = {
-  lastRunAt: 0.71,
-  runCount: 0.11,
-  queryText: 0.09,
-  isPinned: 0.06,
+  lastRunAt: 0.55,
+  runCount: 0.1,
+  queryText: 0.08,
+  isPinned: 0.05,
   ownerId: 0.03,
+  workspaceId: 0.04,
+  createdAt: 0.06,
+  scheduleId: 0.03,
+  resultCount: 0.04,
+  isArchived: 0.02,
 }
 
 function state(overrides: Record<string, unknown> = {}) {
@@ -361,10 +371,10 @@ describe('jevChoice', () => {
     expect(stub).not.toHaveBeenCalled()
   })
 
-  it('refuses a run that is not five candidates before the call goes out', async () => {
+  it('refuses a run that is not ten candidates before the call goes out', async () => {
     const stub = stubFetch(() => chosen())
 
-    const response = await jevChoice(state({ candidates: CANDIDATES.slice(0, 4) }), ENV)
+    const response = await jevChoice(state({ candidates: CANDIDATES.slice(0, 9) }), ENV)
 
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toEqual({ error: 'invalid_body' })
@@ -372,7 +382,7 @@ describe('jevChoice', () => {
   })
 
   it('refuses two candidates sharing a name, which would collide as option keys', async () => {
-    const repeated = [...CANDIDATES.slice(0, 4), { ...CANDIDATES[0] }]
+    const repeated = [...CANDIDATES.slice(0, 9), { ...CANDIDATES[0] }]
     const stub = stubFetch(() => chosen())
 
     const response = await jevChoice(state({ candidates: repeated }), ENV)

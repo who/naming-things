@@ -5,7 +5,7 @@ import { parseCandidates } from '../../src/core/parseCandidates'
 import { DEFAULT_VAL } from '../../src/core/types'
 import { SAMPLE_RUN } from '../../src/fixtures/sampleRun'
 
-/** Floating-point addition of five literals lands near 1, not on it. */
+/** Floating-point addition of ten literals lands near 1, not on it. */
 const PROBABILITY_TOLERANCE = 5
 
 /** A sample run that takes longer than this stops reading as a demo. */
@@ -18,7 +18,7 @@ describe('SAMPLE_RUN', () => {
   it('satisfies the production parser', () => {
     const parsed = parseCandidates(SAMPLE_RUN.candidates.map((candidate) => ({ ...candidate })))
 
-    expect(parsed).toHaveLength(5)
+    expect(parsed).toHaveLength(10)
     expect(parsed.map((candidate) => candidate.name)).toContain(SAMPLE_RUN.jev.choice)
   })
 
@@ -70,7 +70,7 @@ describe('SampleApiClient', () => {
 
     expect(draft.descriptor).toBe(EDITED_DESCRIPTOR)
     expect(draft.code).toBe(SAMPLE_RUN.code)
-    expect(draft.candidates).toHaveLength(5)
+    expect(draft.candidates).toHaveLength(10)
   })
 
   it('answers edited prose with the fixture, which the descriptor check can see', async () => {
@@ -120,6 +120,6 @@ describe('SampleApiClient', () => {
 
     jev.probabilities['weight'] = 0.99
 
-    expect(SAMPLE_RUN.jev.probabilities['weight']).toBe(0.14)
+    expect(SAMPLE_RUN.jev.probabilities['weight']).toBe(0.12)
   })
 })

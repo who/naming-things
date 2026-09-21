@@ -434,9 +434,12 @@ button.accent-jev:not(:disabled) {
   display: grid;
   gap: var(--gap);
   grid-area: cards;
-  /* Five cards across on a wide screen, and the row keeps its height while empty. */
+  /* As many cards across as fit, and the region keeps its shape while empty. Ten
+     of them wrap to two rows on a wide screen and to a column on a phone, so the
+     rows size to what they hold and this region scrolls rather than squeezing a
+     card's prose out past its own border. */
   grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   min-height: 16rem;
   overflow-y: auto;
 }
@@ -462,7 +465,7 @@ button.accent-jev:not(:disabled) {
   border: 1px solid var(--accent-jev);
 }
 
-/* Five cards: the name in monospace, the type as a pill, the case for it below. */
+/* One card: the name in monospace, the type as a pill, the case for it below. */
 .card {
   background: var(--panel);
   border: 1px solid var(--panel-edge);

@@ -46,7 +46,7 @@ function comparable(descriptor: string): string {
 /**
  * Whether the canned answers are actually about this prose.
  *
- * Sample mode serves one courier job's five names whatever the box says, and
+ * Sample mode serves one courier job's ten names whatever the box says, and
  * from the cards alone that is indistinguishable from a live run that happened
  * to be about a parcel. This is the question that separates the two, asked of
  * the descriptor because the descriptor is the only part of a canned run the
@@ -62,7 +62,7 @@ export function describesSampleRun(descriptor: string): boolean {
 
 export class SampleApiClient implements ApiClient {
   /**
-   * Hand back the canned sketch and the canned five.
+   * Hand back the canned sketch and the canned ten.
    *
    * The fixture goes through `parseCandidates` rather than around it, so the
    * canned path and the live path are held to one validation contract and a

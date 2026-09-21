@@ -8,14 +8,19 @@ const VALID: readonly unknown[] = [
   { name: 'arriveBy', typeHint: 'Date', why: 'The far end of the promised window.' },
   { name: 'weightGrams', typeHint: 'number', why: 'Weight in minor units avoids float drift.' },
   { name: 'collected', typeHint: 'boolean', why: 'True once the driver has the parcel.' },
+  { name: 'collectedAt', typeHint: 'Date | null', why: 'The moment, rather than the fact.' },
+  { name: 'driverId', typeHint: 'string', why: 'Identifier-shaped, never a display name.' },
+  { name: 'routeCode', typeHint: 'string', why: 'The round the job was planned onto.' },
+  { name: 'parcelCount', typeHint: 'number', why: 'How many boxes travel under one job.' },
+  { name: 'signedFor', typeHint: 'boolean', why: 'Whether someone put their name to it.' },
 ]
 
-/** A fresh copy of the valid five, so a mutation in one test cannot leak. */
+/** A fresh copy of the valid ten, so a mutation in one test cannot leak. */
 function validInput(): unknown[] {
   return VALID.map((candidate) => ({ ...(candidate as Record<string, unknown>) }))
 }
 
-/** The valid five with one entry swapped for something under test. */
+/** The valid ten with one entry swapped for something under test. */
 function withEntry(index: number, entry: unknown): unknown[] {
   const input = validInput()
   input[index] = entry
@@ -24,10 +29,10 @@ function withEntry(index: number, entry: unknown): unknown[] {
 }
 
 describe('parseCandidates', () => {
-  it('returns five candidates for well-formed input', () => {
+  it('returns ten candidates for well-formed input', () => {
     const parsed = parseCandidates(validInput())
 
-    expect(parsed).toHaveLength(5)
+    expect(parsed).toHaveLength(10)
     expect(parsed[0]).toEqual({
       name: 'pickupAddress',
       typeHint: 'string',
@@ -72,15 +77,15 @@ describe('parseCandidates', () => {
     expect(() => parseCandidates(null)).toThrow(/must be an array/)
   })
 
-  it('rejects four items', () => {
-    expect(() => parseCandidates(validInput().slice(0, 4))).toThrow(/exactly 5 items, not 4/)
+  it('rejects nine items', () => {
+    expect(() => parseCandidates(validInput().slice(0, 9))).toThrow(/exactly 10 items, not 9/)
   })
 
-  it('rejects six items', () => {
+  it('rejects eleven items', () => {
     const input = validInput()
     input.push({ name: 'refunded', typeHint: 'boolean', why: 'One too many.' })
 
-    expect(() => parseCandidates(input)).toThrow(/exactly 5 items, not 6/)
+    expect(() => parseCandidates(input)).toThrow(/exactly 10 items, not 11/)
   })
 
   it('rejects an entry that is not an object', () => {

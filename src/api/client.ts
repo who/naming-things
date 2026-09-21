@@ -29,7 +29,7 @@ export interface CandidateDraft {
   candidates: Candidate[]
 }
 
-/** What the plain model sees when asked to choose: the prose, the sketch, the five. */
+/** What the plain model sees when asked to choose: the prose, the sketch, the ten. */
 export interface LlmPickInput {
   descriptor: string
   code: string

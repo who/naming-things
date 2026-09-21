@@ -28,6 +28,11 @@ const CANDIDATES: Candidate[] = [
   { name: 'massGrams', typeHint: 'number', why: 'The physically correct word.' },
   { name: 'parcelWeight', typeHint: 'number', why: 'Says what is being weighed.' },
   { name: 'grams', typeHint: 'number', why: 'The unit, standing in for the quantity.' },
+  { name: 'parcelWeightGrams', typeHint: 'number', why: 'Says what is weighed and in what.' },
+  { name: 'weightInGrams', typeHint: 'number', why: 'Prose, with a preposition inside a key.' },
+  { name: 'netWeightGrams', typeHint: 'number', why: 'The shipping term for it.' },
+  { name: 'weightG', typeHint: 'number', why: 'The unit, abbreviated to one letter.' },
+  { name: 'depotWeight', typeHint: 'number', why: 'Names where it was weighed, not the unit.' },
 ]
 
 const LLM_PICK: LlmPick = {
@@ -39,7 +44,18 @@ const LLM_PICK: LlmPick = {
 const JEV_PICK: JevPick = {
   choice: 'weightGrams',
   confidence: 0.71,
-  probabilities: { weight: 0.14, weightGrams: 0.52, massGrams: 0.16, parcelWeight: 0.1, grams: 0.08 },
+  probabilities: {
+    weight: 0.12,
+    weightGrams: 0.44,
+    massGrams: 0.12,
+    parcelWeight: 0.08,
+    grams: 0.06,
+    parcelWeightGrams: 0.07,
+    weightInGrams: 0.04,
+    netWeightGrams: 0.03,
+    weightG: 0.02,
+    depotWeight: 0.02,
+  },
   model: 'jev-1.13.0',
 }
 
@@ -47,7 +63,18 @@ const JEV_PICK: JevPick = {
 const SHORT_NAME_PICK: JevPick = {
   choice: 'weight',
   confidence: 0.64,
-  probabilities: { weight: 0.58, weightGrams: 0.22, massGrams: 0.1, parcelWeight: 0.06, grams: 0.04 },
+  probabilities: {
+    weight: 0.5,
+    weightGrams: 0.18,
+    massGrams: 0.08,
+    parcelWeight: 0.05,
+    grams: 0.04,
+    parcelWeightGrams: 0.05,
+    weightInGrams: 0.03,
+    netWeightGrams: 0.03,
+    weightG: 0.02,
+    depotWeight: 0.02,
+  },
   model: 'jev-1.13.0',
 }
 

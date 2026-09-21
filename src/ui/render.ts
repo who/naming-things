@@ -1,7 +1,7 @@
 /**
  * The run, made visible.
  *
- * Everything a visitor reads after clicking Run is built here: the five
+ * Everything a visitor reads after clicking Run is built here: the ten
  * property cards, the two pick badges, the probability bars and the verdict
  * strip. Every value on this page is model output, so nothing is ever assigned
  * as markup — each node is constructed and filled through `textContent`, and a
@@ -80,7 +80,7 @@ function renderFailure(region: HTMLElement, title: string, message: string): voi
 }
 
 /**
- * Draw the five cards, marking the ones the two sides chose.
+ * Draw the ten cards, marking the ones the two sides chose.
  *
  * The highlight is applied here rather than patched on afterwards, so the cards
  * are rebuilt from the candidates and the current picks every time and can

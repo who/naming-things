@@ -20,7 +20,7 @@ import { checkAndIncrement } from './ratelimit'
 /**
  * The body budget, in bytes.
  *
- * A descriptor, a code block and five candidates fit inside this with room to
+ * A descriptor, a code block and ten candidates fit inside this with room to
  * spare, so anything past it is not a run this Worker was built to serve. The
  * cap bounds parsing cost here and provider spend later, which is why the
  * router enforces it rather than each handler.
