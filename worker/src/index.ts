@@ -4,14 +4,16 @@
  * This module is the router and the gate: it answers the CORS preflight,
  * dispatches the four routes, and refuses anything oversized, unrouted or sent
  * with the wrong method before a handler runs. The two LLM routes reach a
- * provider through `./llm`; the Jev route is still a stub, and the rate-limit
- * issue wraps all three in place once they are all real.
+ * provider through `./llm` and the Jev route reaches System One through
+ * `./jev`; the rate-limit issue wraps all three in place now that they are
+ * real.
  *
  * Every refusal is JSON with an `error` key, so the client branches on a stable
  * string instead of parsing status text that varies by runtime.
  */
 
 import { corsHeaders, type Env } from './cors'
+import { jevChoice } from './jev'
 import { generateCandidates, pickBest } from './llm'
 
 /**
@@ -75,24 +77,17 @@ function withCors(response: Response, headers: Record<string, string>): Response
 }
 
 /**
- * The stand-in the Jev route resolves to until its own issue lands.
- *
- * It sits behind the body cap and the JSON parse, so the checks in front of it
- * are exercised now and keep working when the real handler takes this slot.
- */
-function notImplemented(): Response {
-  return errorJson('not_implemented', 501)
-}
-
-/**
  * One slot per operation, which is what kept the later issues independent: the
  * LLM work took two of these slots without touching the third, and the Jev work
- * takes that one with no shared handler to untangle first.
+ * took that one with no shared handler to untangle first. Every handler here
+ * answers a request the router has already vetted, and each one refuses on its
+ * own terms — a deployment holding only one of the two keys still serves the
+ * half of the head-to-head it is configured for.
  */
 const POST_ROUTES: Record<string, RouteHandler> = {
   '/api/llm/candidates': generateCandidates,
   '/api/llm/pick': pickBest,
-  '/api/jev/choice': notImplemented,
+  '/api/jev/choice': jevChoice,
 }
 
 /**

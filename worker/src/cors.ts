@@ -12,14 +12,18 @@
  * The bindings this Worker reads.
  *
  * `ALLOWED_ORIGINS` is a plain wrangler variable and belongs in config. The
- * provider key is a secret set with `wrangler secret put`, so it exists in the
- * deployed environment and nowhere in this repository; it is optional here
- * because a Worker deployed without one has to turn the live path off and say
- * so, rather than fail to start.
+ * provider keys are secrets set with `wrangler secret put`, so they exist in
+ * the deployed environment and nowhere in this repository; both are optional
+ * here because a Worker deployed without one has to turn that half of the live
+ * path off and say so, rather than fail to start. They are separate bindings
+ * because the two judges are separate accounts: a deployment may hold one key
+ * and not the other, and the route without a key is the only one that goes
+ * quiet.
  */
 export interface Env {
   ALLOWED_ORIGINS: string
   ANTHROPIC_API_KEY?: string
+  TYPESAFE_API_KEY?: string
 }
 
 /** A day: long enough to spare a visitor repeat preflights, short enough that an allowlist edit lands. */

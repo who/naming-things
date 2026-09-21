@@ -109,39 +109,28 @@ describe('routing', () => {
     expect(response.headers.get('Allow')).toContain('POST')
   })
 
-  it('accepts a well-formed POST to /api/jev/choice and reports the stub behind it', async () => {
+  // All three provider routes have real handlers now, and this env carries no
+  // key of either kind, so each handler's own refusal is what proves the
+  // request got past the router — and proves the two judges refuse under their
+  // own error strings rather than a shared one. The handlers themselves are
+  // tested against a stubbed provider in llm.test.ts and jev.test.ts.
+  it.each([
+    ['/api/llm/candidates', 'llm_unconfigured'],
+    ['/api/llm/pick', 'llm_unconfigured'],
+    ['/api/jev/choice', 'jev_unconfigured'],
+  ])('hands a well-formed POST to %s to the handler behind it', async (path, error) => {
     const response = await send(
-      new Request('https://worker.test/api/jev/choice', {
+      new Request(`https://worker.test${path}`, {
         method: 'POST',
         headers: { Origin: ALLOWED_ORIGIN, 'Content-Type': 'application/json' },
         body: JSON.stringify({ descriptor: 'a saved search' }),
       }),
     )
 
-    expect(response.status).toBe(501)
-    await expect(response.json()).resolves.toEqual({ error: 'not_implemented' })
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({ error })
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe(ALLOWED_ORIGIN)
   })
-
-  // The LLM routes have real handlers now, and this env carries no key, so the
-  // handler's own refusal is what proves the request got past the router. The
-  // handlers themselves are tested against a stubbed provider in llm.test.ts.
-  it.each(['/api/llm/candidates', '/api/llm/pick'])(
-    'hands a well-formed POST to %s to the handler behind it',
-    async (path) => {
-      const response = await send(
-        new Request(`https://worker.test${path}`, {
-          method: 'POST',
-          headers: { Origin: ALLOWED_ORIGIN, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ descriptor: 'a saved search' }),
-        }),
-      )
-
-      expect(response.status).toBe(503)
-      await expect(response.json()).resolves.toEqual({ error: 'llm_unconfigured' })
-      expect(response.headers.get('Access-Control-Allow-Origin')).toBe(ALLOWED_ORIGIN)
-    },
-  )
 })
 
 describe('body handling', () => {
