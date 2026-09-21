@@ -3,16 +3,16 @@
  *
  * This module is the router and the gate: it answers the CORS preflight,
  * dispatches the four routes, and refuses anything oversized, unrouted or sent
- * with the wrong method before a handler runs. The three provider handlers are
- * stubs today — the LLM, Jev and rate-limit issues replace them in place — so
- * what ships here is the shape of the contract the browser client will code
- * against, with nothing behind it that can spend money yet.
+ * with the wrong method before a handler runs. The two LLM routes reach a
+ * provider through `./llm`; the Jev route is still a stub, and the rate-limit
+ * issue wraps all three in place once they are all real.
  *
  * Every refusal is JSON with an `error` key, so the client branches on a stable
  * string instead of parsing status text that varies by runtime.
  */
 
 import { corsHeaders, type Env } from './cors'
+import { generateCandidates, pickBest } from './llm'
 
 /**
  * The body budget, in bytes.
@@ -75,7 +75,7 @@ function withCors(response: Response, headers: Record<string, string>): Response
 }
 
 /**
- * The stand-in every provider route resolves to until its own issue lands.
+ * The stand-in the Jev route resolves to until its own issue lands.
  *
  * It sits behind the body cap and the JSON parse, so the checks in front of it
  * are exercised now and keep working when the real handler takes this slot.
@@ -85,13 +85,13 @@ function notImplemented(): Response {
 }
 
 /**
- * One slot per operation, which is what keeps the later issues independent: the
- * LLM work replaces two of these and the Jev work the third, with no shared
- * handler to untangle first.
+ * One slot per operation, which is what kept the later issues independent: the
+ * LLM work took two of these slots without touching the third, and the Jev work
+ * takes that one with no shared handler to untangle first.
  */
 const POST_ROUTES: Record<string, RouteHandler> = {
-  '/api/llm/candidates': notImplemented,
-  '/api/llm/pick': notImplemented,
+  '/api/llm/candidates': generateCandidates,
+  '/api/llm/pick': pickBest,
   '/api/jev/choice': notImplemented,
 }
 
