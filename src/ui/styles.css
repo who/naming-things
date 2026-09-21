@@ -61,6 +61,58 @@ body {
   max-width: 62ch;
 }
 
+/*
+ * The two accents, named once before either of them appears on a button, a card
+ * or a pick panel. A visitor who has read this can take a split decision lower
+ * down as the two judges disagreeing, rather than as decoration they have to
+ * find a key for. The word orange and the word blue are in the copy on purpose:
+ * a legend that carries its meaning only in the swatch says nothing to anyone
+ * reading it in grayscale or through a screen reader.
+ */
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  list-style: none;
+  margin: 0.6rem 0 0;
+  max-width: 62ch;
+  padding: 0;
+}
+
+/* Badge and sentence sit on one line and wrap to two when the column is too
+   narrow for both, so a phone stacks the note under its badge instead of
+   squeezing the tagline above it. */
+.legend-item {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.legend-badge {
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+}
+
+.legend-llm {
+  background: rgba(240, 136, 62, 0.12);
+  color: var(--accent-llm);
+}
+
+.legend-jev {
+  background: rgba(88, 166, 255, 0.12);
+  color: var(--accent-jev);
+}
+
+.legend-note {
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+}
+
 .notice {
   border-radius: var(--radius);
   margin: 0.5rem 0 0;
