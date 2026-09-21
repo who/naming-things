@@ -9,12 +9,28 @@
  * the day rolls over. The clock is faked because two of those cases are
  * questions about dates, and a suite that waited for real midnight would only
  * pass once a day.
+ *
+ * One group here is not about edges at all. The deployed caps are a floor the
+ * demo is linked in public against, and nothing in the counter's own logic
+ * would notice them sinking back to the numbers they were tuned up from, so
+ * that floor is asserted rather than left to a comment.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import WRANGLER_TOML from '../wrangler.toml?raw'
 import worker from '../src/index'
 import { checkAndIncrement, utcDayKey } from '../src/ratelimit'
+
+/**
+ * The caps the demo may not be deployed below.
+ *
+ * Written here rather than imported so the assertion cannot move with the thing
+ * it is guarding: a floor read out of the file it checks would agree with any
+ * number that file happened to hold.
+ */
+const IP_DAILY_FLOOR = 5000
+const GLOBAL_DAILY_FLOOR = 100000
 
 /** The allowlist, spelled the way the other Worker suites spell it. */
 const ALLOWED_ORIGIN = 'https://who.github.io'
@@ -203,6 +219,49 @@ describe('the global cap', () => {
     await expect(checkAndIncrement(env, requestFrom('192.0.2.9'))).resolves.toMatchObject({
       allowed: false,
       error: 'quota_exceeded',
+    })
+  })
+})
+
+describe('the floor under both caps', () => {
+  /**
+   * One `[vars]` cap as wrangler would read it, or nothing when it is absent.
+   *
+   * A deleted var is the same regression as a lowered one — the Worker falls
+   * through to whatever the code says — so it has to fail here rather than pass
+   * for want of anything to compare.
+   */
+  function wranglerCap(name: string): number | null {
+    const declared = new RegExp(`^${name}\\s*=\\s*"(\\d+)"\\s*$`, 'm').exec(WRANGLER_TOML)
+
+    return declared === null ? null : Number(declared[1])
+  }
+
+  it('declares both caps in wrangler.toml at or above the floor', () => {
+    expect(wranglerCap('IP_DAILY_LIMIT')).toBeGreaterThanOrEqual(IP_DAILY_FLOOR)
+    expect(wranglerCap('GLOBAL_DAILY_LIMIT')).toBeGreaterThanOrEqual(GLOBAL_DAILY_FLOOR)
+  })
+
+  // The two below name no cap at all, so the numbers compiled into the module
+  // are the ones deciding. A default lowered on its own — vars intact, code
+  // drifted — is exactly the half of the regression a config check cannot see.
+  it('lets a request through one short of the per-address floor on the default alone', async () => {
+    const counters = memoryCounters()
+
+    await counters.put(`ip:${ADDRESS}:2026-09-21`, String(IP_DAILY_FLOOR - 1))
+
+    await expect(checkAndIncrement(envWith(counters), requestFrom(ADDRESS))).resolves.toEqual({
+      allowed: true,
+    })
+  })
+
+  it('lets a request through one short of the global floor on the default alone', async () => {
+    const counters = memoryCounters()
+
+    await counters.put('global:2026-09-21', String(GLOBAL_DAILY_FLOOR - 1))
+
+    await expect(checkAndIncrement(envWith(counters), requestFrom(ADDRESS))).resolves.toEqual({
+      allowed: true,
     })
   })
 })

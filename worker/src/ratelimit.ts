@@ -47,8 +47,13 @@ const COUNTER_TTL_SECONDS = 172800
  * The caps applied when the configuration does not name its own.
  *
  * Sized so a front-page burst degrades into sample mode rather than into a
- * bill: twenty runs is more than anyone needs to see what the demo does, and
- * three hundred bounds the worst day the Worker can have.
+ * bill, and sized for a demo that is linked in public: five thousand runs is
+ * far more than one visitor will spend, and a hundred thousand bounds the worst
+ * day the Worker can have.
+ *
+ * They are a floor as well as a fallback. A deployment whose vars are missing
+ * or mistyped lands here, so a smaller number written in this file would quietly
+ * become the cap the demo runs under.
  */
 const DEFAULT_IP_DAILY_LIMIT = 5000
 const DEFAULT_GLOBAL_DAILY_LIMIT = 100000

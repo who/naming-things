@@ -16,8 +16,13 @@ ALLOWED_ORIGINS = "https://who.github.io,http://localhost:5173"
 
 # The daily caps, as strings because every wrangler var is one. They live in
 # config rather than in code so a cap can be tuned for a busy day without a
-# deploy of the Worker itself. Twenty is more runs than anyone needs to see what
-# the demo does; three hundred bounds the worst day it can have.
+# deploy of the Worker itself. Five thousand per address is far more than one
+# visitor will spend; a hundred thousand across the Worker bounds the worst day
+# it can have while leaving a linked-to-in-public burst somewhere to land.
+#
+# Both numbers are a floor, not just a setting. The Worker suite fails a tree
+# that lowers either, because the old caps drifting back would surface as
+# strangers being turned away rather than as a test going red.
 IP_DAILY_LIMIT = "5000"
 GLOBAL_DAILY_LIMIT = "100000"
 
