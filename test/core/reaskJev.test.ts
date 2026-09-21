@@ -30,7 +30,11 @@ const CANDIDATES: Candidate[] = [
   { name: 'grams', typeHint: 'number', why: 'The unit, standing in for the quantity.' },
 ]
 
-const LLM_PICK: LlmPick = { name: 'weight', reason: 'Shortest name that still reads.' }
+const LLM_PICK: LlmPick = {
+  name: 'weight',
+  reason: 'Shortest name that still reads.',
+  model: 'claude-haiku-4-5-20251001',
+}
 
 const JEV_PICK: JevPick = {
   choice: 'weightGrams',
@@ -166,7 +170,7 @@ describe('reaskJev', () => {
 
   it('does not read two missing answers as a unanimous one', async () => {
     const client = new JevOnlyClient({ choice: '', confidence: null, probabilities: {}, model: '' })
-    const previous = previousRun({ llm: { name: '', reason: 'the LLM side failed' } })
+    const previous = previousRun({ llm: { name: '', reason: 'the LLM side failed', model: '' } })
 
     const result = await reaskJev(client, previous, DEFAULT_VAL())
 

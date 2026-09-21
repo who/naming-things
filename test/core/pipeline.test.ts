@@ -33,7 +33,11 @@ const CANDIDATES: Candidate[] = [
   { name: 'grams', typeHint: 'number', why: 'The unit, standing in for the quantity.' },
 ]
 
-const LLM_PICK: LlmPick = { name: 'weight', reason: 'Shortest name that still reads.' }
+const LLM_PICK: LlmPick = {
+  name: 'weight',
+  reason: 'Shortest name that still reads.',
+  model: 'claude-haiku-4-5-20251001',
+}
 
 const JEV_PICK: JevPick = {
   choice: 'weightGrams',
@@ -170,7 +174,9 @@ describe('runPipeline', () => {
   })
 
   it('reports agreement when the two spell the same name', async () => {
-    const client = new StubApiClient({ llm: { name: 'weightGrams', reason: 'The unit earns it.' } })
+    const client = new StubApiClient({
+      llm: { name: 'weightGrams', reason: 'The unit earns it.', model: 'claude-haiku-4-5-20251001' },
+    })
 
     const result = await runPipeline(client, { descriptor: DESCRIPTOR, val: DEFAULT_VAL() })
 

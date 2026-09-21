@@ -27,10 +27,19 @@ export interface StyleVal {
   }
 }
 
-/** The plain-model choice: one candidate name and the reason it gave. */
+/**
+ * The plain-model choice: one candidate name, the reason it gave, and the model
+ * that gave it.
+ *
+ * `model` is carried for the same reason `JevPick` carries one: the two badges
+ * sit side by side, and a reader comparing them is entitled to know which judge
+ * each answer came from. A pick that never arrived has no model, and the empty
+ * string is how it says so.
+ */
 export interface LlmPick {
   name: string
   reason: string
+  model: string
 }
 
 /**

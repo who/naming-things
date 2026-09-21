@@ -98,7 +98,8 @@ function toError(reason: unknown): Error {
  * it as "this side failed" without a second flag to carry around.
  */
 function failedLlmPick(error: Error): LlmPick {
-  return { name: '', reason: error.message }
+  // No model answered, so there is no judge to name on the badge either.
+  return { name: '', reason: error.message, model: '' }
 }
 
 /**

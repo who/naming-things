@@ -544,5 +544,7 @@ export async function pickBest(body: Record<string, unknown>, env: Env): Promise
     return failure('llm_bad_response', 502)
   }
 
-  return json({ name, reason }, 200)
+  // The pin travels with the answer: the page names the judge on the badge, and
+  // a second copy of this string in the client would be free to drift from it.
+  return json({ name, reason, model: MODEL }, 200)
 }

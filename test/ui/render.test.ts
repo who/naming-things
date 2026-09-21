@@ -130,13 +130,27 @@ describe('renderLlmPick', () => {
     expect(refs.llmPick.querySelector('.pick-reason')?.textContent).toBe(SAMPLE_RUN.llm.reason)
   })
 
+  it('names the model behind the pick in its heading', () => {
+    renderLlmPick(refs, { ...SAMPLE_RUN.llm })
+
+    expect(refs.llmPick.querySelector('.pick-title')?.textContent).toBe(
+      `Plain model (${SAMPLE_RUN.llm.model})`,
+    )
+  })
+
   it('reads a blank name as the failure it is', () => {
-    renderLlmPick(refs, { name: '', reason: 'upstream refused the request' })
+    renderLlmPick(refs, { name: '', reason: 'upstream refused the request', model: '' })
 
     expect(refs.llmPick.classList.contains('pick-failed')).toBe(true)
     expect(refs.llmPick.querySelector('.pick-error')?.textContent).toBe(
       'upstream refused the request',
     )
+  })
+
+  it('leaves the heading bare rather than empty-bracketed when nothing answered', () => {
+    renderLlmPick(refs, { name: '', reason: 'upstream refused the request', model: '' })
+
+    expect(refs.llmPick.querySelector('.pick-title')?.textContent).toBe('Plain model')
   })
 })
 

@@ -440,15 +440,26 @@ function readCandidates(raw: unknown): Candidate[] {
   }
 }
 
-/** The plain model's choice, checked against the names that were actually offered. */
-function readLlmPick(payload: Record<string, unknown>, offered: ReadonlySet<string>): LlmPick {
+/**
+ * The plain model's choice, checked against the names that were actually
+ * offered, and labelled with the model that made it.
+ *
+ * The model arrives as an argument rather than being read here, because the two
+ * live paths know it in different ways and neither one is a field of this
+ * payload.
+ */
+function readLlmPick(
+  payload: Record<string, unknown>,
+  offered: ReadonlySet<string>,
+  model: string,
+): LlmPick {
   const name = readText(payload.name, MAX_NAME_LENGTH)
 
   if (!offered.has(name)) {
     throw new LiveCallError('provider error')
   }
 
-  return { name, reason: readText(payload.reason, MAX_REASON_LENGTH) }
+  return { name, reason: readText(payload.reason, MAX_REASON_LENGTH), model }
 }
 
 /** A number that is really a number, and really within the unit interval. */
@@ -655,7 +666,15 @@ export class RemoteApiClient implements ApiClient {
             PICK_TEMPERATURE,
           )
 
-    return readLlmPick(payload, new Set(input.candidates.map((candidate) => candidate.name)))
+    return readLlmPick(
+      payload,
+      new Set(input.candidates.map((candidate) => candidate.name)),
+      // The Worker reports the model it asked for, the same way it does for the
+      // Jev route. A direct call has no such report — a forced tool call comes
+      // back as the input the model filled in, with the envelope around it
+      // already discarded — so it is labelled with the pin it was sent under.
+      typeof target === 'string' ? readText(payload.model, MAX_MODEL_LENGTH) : LLM_MODEL,
+    )
   }
 
   async jevChoice(state: JevState): Promise<JevPick> {

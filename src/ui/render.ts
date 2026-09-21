@@ -119,7 +119,27 @@ export function renderCandidates(
 }
 
 /**
- * Fill the plain model's badge with its name and its reasoning.
+ * The plain model's heading, with the judge named in parentheses.
+ *
+ * The id goes in a span of its own because the heading is upper-cased chrome
+ * and a provider model string is not chrome: `CLAUDE-HAIKU-4-5-20251001` is not
+ * an id anyone could paste back. A pick that failed has no model, and an empty
+ * pair of brackets would read as a bug rather than as an absence, so the
+ * parenthetical appears only when something answered.
+ */
+function llmTitle(doc: Document, model: string): HTMLHeadingElement {
+  const title = element(doc, 'h2', 'pick-title', LLM_TITLE)
+
+  if (model !== '') {
+    title.append(element(doc, 'span', 'pick-title-model', ` (${model})`))
+  }
+
+  return title
+}
+
+/**
+ * Fill the plain model's badge with its name, its reasoning, and the model
+ * behind both.
  *
  * The pipeline reports a failed pick as an empty name carrying the error in
  * `reason`, so that shape is rendered as the failure it is rather than as a
@@ -136,7 +156,7 @@ export function renderLlmPick(refs: UiRefs, pick: LlmPick): void {
 
   refs.llmPick.classList.remove('pick-failed')
   refs.llmPick.replaceChildren(
-    element(doc, 'h2', 'pick-title', LLM_TITLE),
+    llmTitle(doc, pick.model),
     element(doc, 'code', 'pick-name', pick.name),
     element(doc, 'p', 'pick-reason', pick.reason),
   )

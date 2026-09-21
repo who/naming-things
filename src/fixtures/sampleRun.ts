@@ -61,6 +61,9 @@ export const SAMPLE_RUN: SampleRun = {
     name: 'weight',
     reason:
       'The surrounding interface is already about a parcel, so the shorter name reads cleanly at every call site.',
+    // The pin both live paths ask for, so a canned badge names the same judge a
+    // live one would rather than advertising itself as a fixture.
+    model: 'claude-haiku-4-5-20251001',
   },
   jev: {
     choice: 'weightGrams',

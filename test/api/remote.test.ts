@@ -150,7 +150,9 @@ describe('RemoteApiClient, through the Worker', () => {
   })
 
   it('reads a pick, and refuses a name that was never offered', async () => {
-    useTransport(answers({ name: 'weightGrams', reason: 'Carries its unit.' }))
+    useTransport(
+      answers({ name: 'weightGrams', reason: 'Carries its unit.', model: 'claude-haiku-4-5-20251001' }),
+    )
 
     const pick = await worker().llmPick({
       descriptor: DESCRIPTOR,
@@ -158,9 +160,15 @@ describe('RemoteApiClient, through the Worker', () => {
       candidates: CANDIDATES,
     })
 
-    expect(pick).toEqual({ name: 'weightGrams', reason: 'Carries its unit.' })
+    expect(pick).toEqual({
+      name: 'weightGrams',
+      reason: 'Carries its unit.',
+      model: 'claude-haiku-4-5-20251001',
+    })
 
-    useTransport(answers({ name: 'parcelMass', reason: 'A name nobody proposed.' }))
+    useTransport(
+      answers({ name: 'parcelMass', reason: 'A name nobody proposed.', model: 'claude-haiku-4-5-20251001' }),
+    )
 
     await expect(
       worker().llmPick({ descriptor: DESCRIPTOR, code: CODE, candidates: CANDIDATES }),

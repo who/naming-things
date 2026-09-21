@@ -289,6 +289,7 @@ describe('pickBest', () => {
     await expect(response.json()).resolves.toEqual({
       name: 'lastRunAt',
       reason: 'It names the moment.',
+      model: 'claude-haiku-4-5-20251001',
     })
     expect(sentPayload(stub).temperature).toBe(0)
   })
@@ -387,6 +388,7 @@ describe('through the router', () => {
     await expect(response.json()).resolves.toEqual({
       name: 'isPinned',
       reason: 'It reads as a boolean.',
+      model: 'claude-haiku-4-5-20251001',
     })
   })
 })

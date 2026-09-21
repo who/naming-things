@@ -445,6 +445,11 @@ button.accent-jev:not(:disabled) {
   text-transform: uppercase;
 }
 
+/* The model id, left as it was written inside a heading that upper-cases. */
+.pick-title-model {
+  text-transform: none;
+}
+
 .pick-name {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 1.05rem;
