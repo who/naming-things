@@ -1,0 +1,538 @@
+/*
+ * The whole demo is one screen: a dark HN-flavoured page that fits a 1440 by
+ * 900 laptop without scrolling, and collapses to a single readable column on
+ * anything narrower than 720px. Only the regions scroll, never the page.
+ */
+
+:root {
+  --bg: #0d0f12;
+  --panel: #15181d;
+  --panel-edge: #262b33;
+  --ink: #e7e9ee;
+  --ink-dim: #9aa2b1;
+  --accent-llm: #f0883e;
+  --accent-jev: #58a6ff;
+  --danger: #ff7b72;
+  --radius: 8px;
+  --gap: 1rem;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  height: 100vh;
+  overflow: hidden;
+  padding: 1.25rem 1.5rem;
+}
+
+.masthead h1 {
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.tagline {
+  color: var(--ink-dim);
+  margin: 0.25rem 0 0;
+  max-width: 62ch;
+}
+
+.notice {
+  border-radius: var(--radius);
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+}
+
+.notice[hidden] {
+  display: none;
+}
+
+.notice-banner {
+  background: rgba(88, 166, 255, 0.12);
+  border: 1px solid var(--accent-jev);
+}
+
+.notice-error {
+  background: rgba(255, 123, 114, 0.12);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+/* Three named areas: controls on the left, cards in the middle, verdict along the bottom. */
+.stage {
+  display: grid;
+  flex: 1;
+  gap: var(--gap);
+  grid-template-areas:
+    'controls cards'
+    'verdict verdict';
+  grid-template-columns: minmax(19rem, 24rem) 1fr;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  grid-area: controls;
+  min-height: 0;
+}
+
+.field-label {
+  color: var(--ink-dim);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#descriptor {
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: var(--radius);
+  color: inherit;
+  flex: 1;
+  font: inherit;
+  min-height: 9rem;
+  /* A long descriptor scrolls inside the box rather than pushing the fold down. */
+  overflow-y: auto;
+  padding: 0.75rem;
+  resize: none;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+button {
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: var(--radius);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.45rem 0.9rem;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--ink-dim);
+}
+
+button:disabled {
+  color: var(--ink-dim);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button.accent-llm:not(:disabled) {
+  border-color: var(--accent-llm);
+  color: var(--accent-llm);
+}
+
+button.accent-jev:not(:disabled) {
+  border-color: var(--accent-jev);
+  color: var(--accent-jev);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-jev);
+  outline-offset: 2px;
+}
+
+.val-controls:empty,
+.cards:empty,
+.pick:empty {
+  /* Empty regions still hold their shape, so nothing jumps when content lands. */
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0 10px,
+      rgba(154, 162, 177, 0.06) 10px 20px
+    );
+  border: 1px dashed var(--panel-edge);
+  border-radius: var(--radius);
+}
+
+.val-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 4.5rem;
+}
+
+.val-group {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.val-label,
+.val-weight-name {
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.val-label {
+  min-width: 4rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* A chip is a button, so it inherits the page's button skin and only says
+   how it is smaller and whether it is currently on. */
+.chip {
+  font-size: 0.78rem;
+  padding: 0.25rem 0.6rem;
+}
+
+.chip[aria-pressed='true'] {
+  border-color: var(--accent-jev);
+  color: var(--accent-jev);
+}
+
+.val-weights {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.val-weight {
+  align-items: center;
+  display: grid;
+  gap: 0.5rem;
+  /* Label, slider, readout: the readout column is fixed so a moving number
+     cannot shift the slider under the visitor's cursor. */
+  grid-template-columns: 7rem 1fr 2rem;
+}
+
+.val-slider {
+  accent-color: var(--accent-jev);
+  width: 100%;
+}
+
+.val-weight-value {
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.state-viewer {
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: var(--radius);
+  color: var(--ink-dim);
+  max-height: 10rem;
+  overflow: auto;
+  padding: 0.5rem 0.75rem;
+}
+
+.state-viewer summary {
+  cursor: pointer;
+}
+
+/* The payload keeps every line break it was serialized with; the panel around
+   it is what scrolls, so a long descriptor cannot push the page taller. */
+.state-json {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 0.5rem 0 0;
+  white-space: pre;
+}
+
+.cards {
+  display: grid;
+  gap: var(--gap);
+  grid-area: cards;
+  /* Five cards across on a wide screen, and the row keeps its height while empty. */
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  min-height: 16rem;
+  overflow-y: auto;
+}
+
+.verdict {
+  display: grid;
+  gap: var(--gap);
+  grid-area: verdict;
+  grid-template-columns: 1fr 1fr;
+  min-height: 7rem;
+}
+
+.pick {
+  border-radius: var(--radius);
+  padding: 0.75rem;
+}
+
+.pick-llm:not(:empty) {
+  border: 1px solid var(--accent-llm);
+}
+
+.pick-jev:not(:empty) {
+  border: 1px solid var(--accent-jev);
+}
+
+/* Five cards: the name in monospace, the type as a pill, the case for it below. */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 0.75rem;
+}
+
+.card-name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.card-type {
+  align-self: flex-start;
+  background: rgba(154, 162, 177, 0.14);
+  border-radius: 999px;
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.5rem;
+}
+
+.card-why {
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* Each judge marks its own card, so a disagreement is visible up here too. */
+.card-pick-llm {
+  border-color: var(--accent-llm);
+  box-shadow: inset 0 0 0 1px var(--accent-llm);
+}
+
+.card-pick-jev {
+  border-color: var(--accent-jev);
+  box-shadow: inset 0 0 0 1px var(--accent-jev);
+}
+
+/* Both on one card: the two accents share it rather than one hiding the other. */
+.card-pick-llm.card-pick-jev {
+  border-color: var(--accent-llm);
+  box-shadow: inset 0 0 0 1px var(--accent-jev);
+}
+
+.pick-title {
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.4rem;
+  text-transform: uppercase;
+}
+
+.pick-name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.pick-reason {
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+  margin: 0.35rem 0 0;
+}
+
+.pick-confidence {
+  color: var(--ink-dim);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  margin: 0.35rem 0 0;
+  text-transform: uppercase;
+}
+
+.confidence-value {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.pick-model {
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+  margin: 0.5rem 0 0;
+}
+
+.pick-error {
+  color: var(--danger);
+  margin: 0;
+}
+
+.pick.pick-failed {
+  border: 1px solid var(--danger);
+}
+
+/* The whole distribution, tallest first, so the margin of the answer shows. */
+.bars {
+  display: grid;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.bar {
+  align-items: center;
+  color: var(--ink-dim);
+  display: grid;
+  font-size: 0.76rem;
+  gap: 0.5rem;
+  grid-template-columns: minmax(0, 9rem) 1fr 2.5rem;
+}
+
+.bar-chosen {
+  color: var(--ink);
+}
+
+.bar-name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar-track {
+  background: rgba(154, 162, 177, 0.14);
+  border-radius: 999px;
+  height: 0.4rem;
+  overflow: hidden;
+}
+
+.bar-fill {
+  background: var(--accent-jev);
+  display: block;
+  height: 100%;
+}
+
+.bar-value {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* The headline sits above both badges, across the full width of the strip. */
+.verdict-banner {
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 700;
+  grid-column: 1 / -1;
+  letter-spacing: 0.18em;
+  margin: 0;
+  padding: 0.4rem 0.75rem;
+  text-align: center;
+}
+
+.verdict-banner.is-agree {
+  background: rgba(88, 166, 255, 0.12);
+  color: var(--accent-jev);
+}
+
+.verdict-banner.is-disagree {
+  background: rgba(240, 136, 62, 0.12);
+  color: var(--accent-llm);
+}
+
+/* One shot: the class goes on for the flash and comes off on animationend. */
+.verdict-banner.verdict-flash {
+  animation: verdict-flash 620ms ease-out 1;
+}
+
+@keyframes verdict-flash {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A waiting region keeps its shape and sweeps, so three stages read separately. */
+.is-loading {
+  position: relative;
+}
+
+.is-loading::after {
+  animation: stage-sweep 1.1s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, rgba(154, 162, 177, 0.16), transparent);
+  border-radius: var(--radius);
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+@keyframes stage-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (max-width: 720px) {
+  #app {
+    height: auto;
+    overflow: visible;
+  }
+
+  .stage {
+    grid-template-areas:
+      'controls'
+      'cards'
+      'verdict';
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .verdict {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verdict-banner.verdict-flash,
+  .is-loading::after {
+    animation: none;
+  }
+}

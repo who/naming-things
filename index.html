@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>naming-things</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="masthead">
+        <h1>naming-things</h1>
+        <p class="tagline">
+          The class-property picker: describe a thing, see five names for its properties, and
+          watch a plain model and Jev Choice pick one each.
+        </p>
+        <p id="banner" class="notice notice-banner" hidden></p>
+        <p id="error" class="notice notice-error" role="alert" hidden></p>
+      </header>
+
+      <main class="stage">
+        <section class="controls" aria-label="Run controls">
+          <label class="field-label" for="descriptor">Describe the thing</label>
+          <textarea id="descriptor" spellcheck="false"></textarea>
+          <div class="button-row">
+            <button id="randomize" type="button">Randomize</button>
+            <button id="run" type="button" class="accent-llm" disabled>Run</button>
+            <button id="reask-jev" type="button" class="accent-jev" disabled>Re-ask Jev</button>
+          </div>
+          <div id="val-controls" class="val-controls" aria-label="Style controls"></div>
+          <details id="state-viewer" class="state-viewer">
+            <summary>State sent to Jev</summary>
+          </details>
+        </section>
+
+        <section id="cards" class="cards" aria-label="Property candidates" aria-live="polite"></section>
+
+        <section id="verdict" class="verdict" aria-label="Head to head">
+          <div id="llm-pick" class="pick pick-llm"></div>
+          <div id="jev-pick" class="pick pick-jev"></div>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

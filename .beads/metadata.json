@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "naming_things",
+  "project_id": "ecc66c87-8402-49d5-9291-537c461b579e"
+}
