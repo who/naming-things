@@ -1,0 +1,15 @@
+# The Worker that will hold every provider secret.
+#
+# Nothing in this file is a secret: keys arrive through `wrangler secret put`
+# and live only in the Worker's environment, so the browser never sees one.
+
+name = "naming-things-worker"
+main = "src/index.ts"
+compatibility_date = "2026-09-21"
+
+[vars]
+# The browser origins allowed to spend this Worker's API budget, as a
+# comma-separated list. The first is where the built demo is served from; the
+# second is the local Vite dev server. Anything else gets no CORS headers, so
+# widening this to a wildcard would hand the budget to any site on the web.
+ALLOWED_ORIGINS = "https://who.github.io,http://localhost:5173"
