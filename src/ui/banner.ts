@@ -52,6 +52,16 @@ export const CANNED_MISMATCH = 'answers are the courier example, not your text'
 const GENERIC_ERROR = 'That run could not finish. Try again in a moment.'
 
 /**
+ * What a visitor is told when Randomize comes back with nothing.
+ *
+ * Randomize is not a run, so the line above would name something that never
+ * started. What is left to say is short and true either way: whatever went
+ * wrong upstream, the box still holds the prose it held a second ago and the
+ * button is ready to be pressed again.
+ */
+export const RANDOMIZE_BUSY = 'Could not fetch a new brief right now. Try again in a moment.'
+
+/**
  * Name the mode this run used, and why it is not the one that was asked for.
  *
  * `reason` is a short phrase the caller chose — "quota exceeded", "network
@@ -89,6 +99,19 @@ export function showError(refs: UiRefs, error: unknown): void {
   const readable = error instanceof CandidateParseError || error instanceof StateTooLargeError
 
   refs.error.textContent = readable ? error.message : GENERIC_ERROR
+  refs.error.hidden = false
+}
+
+/**
+ * Put fixed copy in the error strip, with no failure to inspect first.
+ *
+ * `showError` exists to decide how much of an error is safe to show. This is
+ * for the cases where that question is already settled because the copy is a
+ * constant in this module rather than anything a transport produced, so there
+ * is nothing to leak and nothing to classify.
+ */
+export function showBusy(refs: UiRefs, copy: string): void {
+  refs.error.textContent = copy
   refs.error.hidden = false
 }
 

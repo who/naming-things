@@ -7,7 +7,15 @@ import { describesSampleRun } from './api/sample'
 import { pickRandomDescriptor } from './core/descriptors'
 import { buildJevState, reaskJev, runPipeline, type RunStageEvent } from './core/pipeline'
 import type { Candidate, RunMode, RunResult, RunStage, StyleVal } from './core/types'
-import { CANNED_MISMATCH, clearError, setModeBanner, showError } from './ui/banner'
+import { setActivityWaiting } from './ui/activityCard'
+import {
+  CANNED_MISMATCH,
+  clearError,
+  RANDOMIZE_BUSY,
+  setModeBanner,
+  showBusy,
+  showError,
+} from './ui/banner'
 import { queryRefs, type UiRefs } from './ui/dom'
 import {
   clearResults,
@@ -251,6 +259,11 @@ export function bootstrap(doc: Document = document): UiRefs {
 
     randomizing = true
     refs.randomize.disabled = true
+    // A greyed button is the whole of the current feedback, and a model takes
+    // seconds to answer. The box about to be rewritten is the thing that is
+    // waiting, so the box is what says so.
+    setActivityWaiting(refs.descriptorShell, true)
+    clearError(refs)
 
     void client
       .generateDescriptor(refs.descriptor.value)
@@ -260,14 +273,18 @@ export function bootstrap(doc: Document = document): UiRefs {
       .catch((reason: unknown) => {
         // The box keeps what it had. A failed Randomize is a button that did
         // nothing, and wiping prose the visitor may have written themselves
-        // would cost them more than the new brief was worth. A live path that
-        // merely went quiet never arrives here — it has already fallen back to
-        // the bank and said so in the banner — so this is the app's own bugs.
-        showError(refs, reason)
+        // would cost them more than the new brief was worth. The strip gets the
+        // fixed line rather than the failure: nothing that reaches here is
+        // about a run, and none of it was written for a visitor to read.
+        console.error(reason)
+        showBusy(refs, RANDOMIZE_BUSY)
       })
       .finally(() => {
+        // Both settlements, and both orders of them: the border must not be
+        // left running over a box that has stopped waiting.
         randomizing = false
         refs.randomize.disabled = false
+        setActivityWaiting(refs.descriptorShell, false)
       })
   })
 

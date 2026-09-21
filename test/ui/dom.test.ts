@@ -13,6 +13,7 @@ import { queryRefs, type UiRefs } from '../../src/ui/dom'
  */
 const CONTRACT_IDS: Record<keyof UiRefs, string> = {
   descriptor: 'descriptor',
+  descriptorShell: 'descriptor-shell',
   randomize: 'randomize',
   run: 'run',
   reaskJev: 'reask-jev',
@@ -81,6 +82,24 @@ describe('bootstrap', () => {
 
     expect(DESCRIPTOR_BANK).toContain(refs.descriptor.value)
     expect(refs.randomize.disabled).toBe(false)
+  })
+
+  // The border is a stylesheet's business; what has to hold here is that the
+  // class is on for the whole call and off once it settles, in the mode where
+  // the answer comes back in a single microtask.
+  it('marks the descriptor shell as waiting for the length of a Randomize', async () => {
+    const refs = bootstrap(document)
+
+    refs.randomize.click()
+
+    expect(refs.descriptorShell.classList.contains('is-waiting')).toBe(true)
+    expect(refs.descriptorShell.getAttribute('aria-busy')).toBe('true')
+
+    await vi.waitFor(() => {
+      expect(refs.descriptorShell.classList.contains('is-waiting')).toBe(false)
+    })
+
+    expect(refs.descriptorShell.getAttribute('aria-busy')).toBe('false')
   })
 
   it('enables Run and holds Re-ask Jev back until a run has landed', () => {

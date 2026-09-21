@@ -9,6 +9,7 @@
 /** Every element the page hydrates, resolved once at startup. */
 export interface UiRefs {
   descriptor: HTMLTextAreaElement
+  descriptorShell: HTMLElement
   randomize: HTMLButtonElement
   run: HTMLButtonElement
   reaskJev: HTMLButtonElement
@@ -42,6 +43,10 @@ function requireElement<T extends HTMLElement>(doc: Document, id: string): T {
 export function queryRefs(doc: Document = document): UiRefs {
   return {
     descriptor: requireElement<HTMLTextAreaElement>(doc, 'descriptor'),
+    // The shell around the box, not the box itself: a textarea is a replaced
+    // element and cannot carry the pseudo-elements the waiting border is drawn
+    // from, so the decoration needs an ordinary element to live on.
+    descriptorShell: requireElement(doc, 'descriptor-shell'),
     randomize: requireElement<HTMLButtonElement>(doc, 'randomize'),
     run: requireElement<HTMLButtonElement>(doc, 'run'),
     reaskJev: requireElement<HTMLButtonElement>(doc, 'reask-jev'),
