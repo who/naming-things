@@ -36,12 +36,13 @@ body {
   line-height: 1.45;
 }
 
+/* The window is the only vertical scroller: the shell fills a tall viewport and
+   grows past a short one instead of clipping whatever did not fit. */
 #app {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
   padding: 1.25rem 1.5rem;
 }
 
@@ -87,7 +88,9 @@ body {
     'controls cards'
     'verdict verdict';
   grid-template-columns: minmax(19rem, 24rem) 1fr;
-  grid-template-rows: minmax(0, 1fr) auto;
+  /* The upper row never sizes below what it holds, so a short viewport makes the
+     page longer rather than running the controls underneath the verdict. */
+  grid-template-rows: minmax(min-content, 1fr) auto;
   min-height: 0;
 }
 
@@ -96,7 +99,6 @@ body {
   flex-direction: column;
   gap: 0.75rem;
   grid-area: controls;
-  min-height: 0;
 }
 
 .field-label {
@@ -511,11 +513,6 @@ button.accent-jev:not(:disabled) {
 }
 
 @media (max-width: 720px) {
-  #app {
-    height: auto;
-    overflow: visible;
-  }
-
   .stage {
     grid-template-areas:
       'controls'
