@@ -19,7 +19,33 @@ import { buildChoiceQuestion, jevChoice } from '../src/jev'
 /** Obviously fake, and asserted never to reach a response body. */
 const KEY = 'test-key-not-a-real-one'
 
-const ENV = { ALLOWED_ORIGINS: 'https://who.github.io', TYPESAFE_API_KEY: KEY }
+/**
+ * Workers KV reduced to the two calls the limiter makes.
+ *
+ * The caps are covered in ratelimit.test.ts. This suite reaches the handler
+ * through the router once, and a Worker with no namespace bound refuses that
+ * route before the judge is ever asked, so the namespace has to be here.
+ */
+function memoryCounters() {
+  const stored = new Map<string, string>()
+
+  return {
+    get: async (key: string): Promise<string | null> => stored.get(key) ?? null,
+    put: async (key: string, value: string): Promise<void> => {
+      stored.set(key, value)
+    },
+  }
+}
+
+const ENV = {
+  ALLOWED_ORIGINS: 'https://who.github.io',
+  TYPESAFE_API_KEY: KEY,
+  RATE_LIMIT: memoryCounters(),
+  IP_DAILY_LIMIT: '1000',
+  GLOBAL_DAILY_LIMIT: '1000',
+} as never
+
+/** No key, and no namespace either: the handler is called directly, so neither is reached. */
 const UNCONFIGURED_ENV = { ALLOWED_ORIGINS: 'https://who.github.io' }
 
 /** The pin the handler sends and the pin it demands back. */

@@ -13,3 +13,18 @@ compatibility_date = "2026-09-21"
 # second is the local Vite dev server. Anything else gets no CORS headers, so
 # widening this to a wildcard would hand the budget to any site on the web.
 ALLOWED_ORIGINS = "https://who.github.io,http://localhost:5173"
+
+# The daily caps, as strings because every wrangler var is one. They live in
+# config rather than in code so a cap can be tuned for a busy day without a
+# deploy of the Worker itself. Twenty is more runs than anyone needs to see what
+# the demo does; three hundred bounds the worst day it can have.
+IP_DAILY_LIMIT = "20"
+GLOBAL_DAILY_LIMIT = "300"
+
+# Where the daily counters live. Create the namespace once with
+# `wrangler kv namespace create RATE_LIMIT` and paste the id it prints over the
+# placeholder below — the binding name is what the code reads, but the id is
+# what makes it a real namespace rather than a deploy-time error.
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "replace-with-the-id-wrangler-kv-namespace-create-prints"

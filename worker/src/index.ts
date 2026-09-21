@@ -2,11 +2,11 @@
  * The Worker that fronts every live call, and the only place a key may live.
  *
  * This module is the router and the gate: it answers the CORS preflight,
- * dispatches the four routes, and refuses anything oversized, unrouted or sent
- * with the wrong method before a handler runs. The two LLM routes reach a
- * provider through `./llm` and the Jev route reaches System One through
- * `./jev`; the rate-limit issue wraps all three in place now that they are
- * real.
+ * dispatches the four routes, and refuses anything oversized, unrouted, sent
+ * with the wrong method or over its daily quota before a handler runs. The two
+ * LLM routes reach a provider through `./llm` and the Jev route reaches System
+ * One through `./jev`; all three are counted through `./ratelimit`, and the
+ * health route deliberately is not.
  *
  * Every refusal is JSON with an `error` key, so the client branches on a stable
  * string instead of parsing status text that varies by runtime.
@@ -15,6 +15,7 @@
 import { corsHeaders, type Env } from './cors'
 import { jevChoice } from './jev'
 import { generateCandidates, pickBest } from './llm'
+import { checkAndIncrement } from './ratelimit'
 
 /**
  * The body budget, in bytes.
@@ -213,6 +214,23 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
     return errorJson('method_not_allowed', 405, { ...headers, Allow: 'POST, OPTIONS' })
   }
 
+  // Counted before the body is even read, because a malformed body is the
+  // cheapest thing to retry in a loop: charging quota only for requests that
+  // parse would leave the obvious bypass wide open. The health route never
+  // reaches here, so a liveness probe stays free however often it runs.
+  const quota = await checkAndIncrement(env, request)
+
+  if (!quota.allowed) {
+    if (quota.error === 'quota_exceeded') {
+      return json({ error: quota.error, retryAfter: quota.retryAfter }, 429, {
+        ...headers,
+        'Retry-After': String(quota.retryAfter),
+      })
+    }
+
+    return errorJson(quota.error, 503, headers)
+  }
+
   const outcome = await readJsonBody(request)
 
   if (!outcome.ok) {
@@ -226,9 +244,10 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
  * The module Worker entry point.
  *
  * Module syntax rather than a service worker, because typed `env` bindings are
- * how the allowlist — and, later, the secrets — reach this code at all. `ctx`
- * is part of the runtime's signature and goes unused until the rate limiter has
- * background work to hand it.
+ * how the allowlist, the secrets and the counter namespace reach this code at
+ * all. `ctx` is part of the runtime's signature and stays unused: the counter
+ * writes are awaited rather than deferred, since a request that proceeds on an
+ * unwritten counter is a request that was never really counted.
  */
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {

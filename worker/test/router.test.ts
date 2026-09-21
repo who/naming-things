@@ -11,8 +11,31 @@ import { describe, expect, it } from 'vitest'
 
 import worker from '../src/index'
 
-/** The deployed allowlist, spelled the way wrangler.toml spells it. */
-const ENV = { ALLOWED_ORIGINS: 'https://who.github.io,http://localhost:5173' }
+/**
+ * Workers KV reduced to the two calls the limiter makes.
+ *
+ * The caps themselves are covered in ratelimit.test.ts. Here the namespace only
+ * has to exist, because a Worker with none bound refuses every live route and
+ * this suite is about which route a request reaches.
+ */
+function memoryCounters() {
+  const stored = new Map<string, string>()
+
+  return {
+    get: async (key: string): Promise<string | null> => stored.get(key) ?? null,
+    put: async (key: string, value: string): Promise<void> => {
+      stored.set(key, value)
+    },
+  }
+}
+
+/** The deployed allowlist, spelled the way wrangler.toml spells it, with caps set well past what this suite spends. */
+const ENV = {
+  ALLOWED_ORIGINS: 'https://who.github.io,http://localhost:5173',
+  RATE_LIMIT: memoryCounters(),
+  IP_DAILY_LIMIT: '1000',
+  GLOBAL_DAILY_LIMIT: '1000',
+} as never
 
 /** An origin on the list, and one that merely starts like it. */
 const ALLOWED_ORIGIN = 'https://who.github.io'

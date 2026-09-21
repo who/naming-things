@@ -18,7 +18,33 @@ import { generateCandidates, pickBest } from '../src/llm'
 /** Obviously fake, and asserted never to reach a response body. */
 const KEY = 'test-key-not-a-real-one'
 
-const ENV = { ALLOWED_ORIGINS: 'https://who.github.io', ANTHROPIC_API_KEY: KEY }
+/**
+ * Workers KV reduced to the two calls the limiter makes.
+ *
+ * The caps are covered in ratelimit.test.ts. This suite reaches the handlers
+ * through the router twice, and a Worker with no namespace bound refuses those
+ * routes before the provider is ever called, so the namespace has to be here.
+ */
+function memoryCounters() {
+  const stored = new Map<string, string>()
+
+  return {
+    get: async (key: string): Promise<string | null> => stored.get(key) ?? null,
+    put: async (key: string, value: string): Promise<void> => {
+      stored.set(key, value)
+    },
+  }
+}
+
+const ENV = {
+  ALLOWED_ORIGINS: 'https://who.github.io',
+  ANTHROPIC_API_KEY: KEY,
+  RATE_LIMIT: memoryCounters(),
+  IP_DAILY_LIMIT: '1000',
+  GLOBAL_DAILY_LIMIT: '1000',
+} as never
+
+/** No key, and no namespace either: the handlers are called directly, so neither is reached. */
 const UNCONFIGURED_ENV = { ALLOWED_ORIGINS: 'https://who.github.io' }
 
 const DESCRIPTOR = 'a saved search a visitor can re-run later'

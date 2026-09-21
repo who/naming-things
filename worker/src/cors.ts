@@ -19,11 +19,22 @@
  * because the two judges are separate accounts: a deployment may hold one key
  * and not the other, and the route without a key is the only one that goes
  * quiet.
+ *
+ * `RATE_LIMIT` is the KV namespace the daily caps are counted in, and the two
+ * limit variables are what those caps are. All three are optional in the type
+ * and none of them is optional in practice: a deployment missing the namespace
+ * refuses the live routes rather than serving them uncounted, and a deployment
+ * missing a limit falls back to the built-in one. They are declared here rather
+ * than in the rate limiter because this is the one description of everything
+ * the runtime hands this Worker.
  */
 export interface Env {
   ALLOWED_ORIGINS: string
   ANTHROPIC_API_KEY?: string
   TYPESAFE_API_KEY?: string
+  RATE_LIMIT?: KVNamespace
+  IP_DAILY_LIMIT?: string
+  GLOBAL_DAILY_LIMIT?: string
 }
 
 /** A day: long enough to spare a visitor repeat preflights, short enough that an allowlist edit lands. */
