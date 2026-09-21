@@ -1,7 +1,7 @@
 import './ui/styles.css'
 
 import type { ApiClient } from './api/client'
-import { SampleApiClient } from './api/sample'
+import { createClient } from './api/mode'
 import { pickRandomDescriptor } from './core/descriptors'
 import { buildJevState, reaskJev, runPipeline, type RunStageEvent } from './core/pipeline'
 import type { Candidate, RunResult, RunStage, StyleVal } from './core/types'
@@ -143,24 +143,28 @@ async function executeReask(
  * Hydrate the page shell: resolve the element contract, seed the descriptor
  * box, mount the style controls, and wire Randomize, Run and Re-ask Jev.
  *
- * Run is hard-wired to the canned client, so the page works with no key and no
- * network; choosing between sample and live answers is the remote client's
- * problem, not this one's. The style the controls hold is the one the next run
- * carries, and moving a control after a run rewrites the visible payload so
- * the change is readable before Jev is ever asked again. Re-ask Jev then spends
- * that style on a second opinion over the same five cards, so it stays disabled
- * until a run has left something on the page worth re-asking about.
+ * Run goes through whichever client this build and this browser add up to, and
+ * through the fallback behind it, so the page works with no key and no network
+ * and says which of those it is doing. The style the controls hold is the one
+ * the next run carries, and moving a control after a run rewrites the visible
+ * payload so the change is readable before Jev is ever asked again. Re-ask Jev
+ * then spends that style on a second opinion over the same five cards, so it
+ * stays disabled until a run has left something on the page worth re-asking
+ * about.
  */
 export function bootstrap(doc: Document = document): UiRefs {
   const refs = queryRefs(doc)
-  const client = new SampleApiClient()
+  const { client, mode } = createClient((reason) => {
+    // A live run that dropped to canned answers has to say so where the mode is
+    // already named. One fixed disagreement read as a live one is the demo
+    // claiming something it did not do.
+    setModeBanner(refs, 'sample', reason)
+  })
   let running = false
   let val = loadVal()
   let lastRun: RunResult | null = null
 
-  // Sample is the only mode this page can run in yet; the remote client issue
-  // is what will ever call this with anything else.
-  setModeBanner(refs, 'sample')
+  setModeBanner(refs, mode)
 
   mountValControls(refs.valControls, val, (next) => {
     val = next
