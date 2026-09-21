@@ -17,7 +17,10 @@ export interface UiRefs {
   llmPick: HTMLElement
   jevPick: HTMLElement
   verdict: HTMLElement
-  stateViewer: HTMLDetailsElement
+  stateOpen: HTMLButtonElement
+  stateModal: HTMLElement
+  stateClose: HTMLButtonElement
+  stateViewer: HTMLElement
   banner: HTMLElement
   error: HTMLElement
 }
@@ -47,7 +50,10 @@ export function queryRefs(doc: Document = document): UiRefs {
     llmPick: requireElement(doc, 'llm-pick'),
     jevPick: requireElement(doc, 'jev-pick'),
     verdict: requireElement(doc, 'verdict'),
-    stateViewer: requireElement<HTMLDetailsElement>(doc, 'state-viewer'),
+    stateOpen: requireElement<HTMLButtonElement>(doc, 'state-open'),
+    stateModal: requireElement(doc, 'state-modal'),
+    stateClose: requireElement<HTMLButtonElement>(doc, 'state-close'),
+    stateViewer: requireElement(doc, 'state-viewer'),
     banner: requireElement(doc, 'banner'),
     error: requireElement(doc, 'error'),
   }

@@ -247,26 +247,110 @@ button.accent-jev:not(:disabled) {
   text-align: right;
 }
 
-.state-viewer {
+/* The opener sits with the other controls and spans them, because it speaks for
+   the whole run rather than for one field. */
+.state-open {
+  text-align: left;
+}
+
+/* The overlay covers the shell rather than the viewport's top-left corner: the
+   page can be taller than the window, and a dialog anchored to the document
+   would sit off-screen on a scrolled page. */
+.state-modal {
+  align-items: center;
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: var(--gap);
+  position: fixed;
+  z-index: 10;
+}
+
+.state-modal[hidden] {
+  display: none;
+}
+
+.state-backdrop {
+  background: rgba(13, 15, 18, 0.72);
+  inset: 0;
+  position: absolute;
+}
+
+.state-dialog {
   background: var(--panel);
   border: 1px solid var(--panel-edge);
   border-radius: var(--radius);
-  color: var(--ink-dim);
-  max-height: 10rem;
+  display: flex;
+  flex-direction: column;
+  /* Tall enough to read a real payload, short enough to stay inside the window
+     on a laptop; the listing inside is what scrolls. */
+  max-height: min(42rem, 100%);
+  max-width: min(58rem, 100%);
+  padding: 0.75rem 1rem 1rem;
+  position: relative;
+  width: 100%;
+}
+
+.state-dialog-head {
+  align-items: center;
+  display: flex;
+  gap: var(--gap);
+  justify-content: space-between;
+}
+
+.state-dialog-title {
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* The body scrolls as one, so the gutter cannot drift out of step with the
+   lines it numbers. */
+.state-viewer {
+  border: 1px solid var(--panel-edge);
+  border-radius: var(--radius);
+  margin-top: 0.75rem;
+  min-height: 0;
   overflow: auto;
   padding: 0.5rem 0.75rem;
 }
 
-.state-viewer summary {
-  cursor: pointer;
+.state-empty {
+  color: var(--ink-dim);
+  margin: 0;
+}
+
+/* Numbers in one column, payload in the next; both rows are laid out on the
+   same line height so line 40 in the gutter is line 40 of the JSON. */
+.state-payload {
+  display: grid;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  gap: 0.75rem;
+  grid-template-columns: auto 1fr;
+  line-height: 1.5;
+}
+
+.state-line-numbers {
+  border-right: 1px solid var(--panel-edge);
+  color: var(--ink-dim);
+  list-style: none;
+  margin: 0;
+  padding: 0 0.6rem 0 0;
+  text-align: right;
+  /* The digits must not be selectable, or copying the payload takes the gutter
+     with it. */
+  user-select: none;
+}
+
+.state-line-number {
+  font-variant-numeric: tabular-nums;
 }
 
 /* The payload keeps every line break it was serialized with; the panel around
-   it is what scrolls, so a long descriptor cannot push the page taller. */
+   it is what scrolls, so a long descriptor cannot push the dialog wider. */
 .state-json {
-  font-size: 0.78rem;
-  line-height: 1.45;
-  margin: 0.5rem 0 0;
+  font: inherit;
+  margin: 0;
   white-space: pre;
 }
 

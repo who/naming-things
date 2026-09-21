@@ -18,7 +18,7 @@ import {
   renderVerdict,
   setStageLoading,
 } from './ui/render'
-import { clearStatePayload, renderStatePayload } from './ui/stateViewer'
+import { clearStatePayload, mountStateModal, renderStatePayload } from './ui/stateViewer'
 import { loadVal, mountValControls } from './ui/valControls'
 
 const APP_SELECTOR = '#app'
@@ -192,7 +192,8 @@ async function executeReask(
  * payload so the change is readable before Jev is ever asked again. Re-ask Jev
  * then spends that style on a second opinion over the same five cards, so it
  * stays disabled until a run has left something on the page worth re-asking
- * about.
+ * about. The state viewer is wired here too, and stays shut and unopenable
+ * until a run has built a payload worth opening it for.
  */
 export function bootstrap(doc: Document = document): UiRefs {
   const refs = queryRefs(doc)
@@ -210,6 +211,7 @@ export function bootstrap(doc: Document = document): UiRefs {
   let lastRun: RunResult | null = null
 
   setModeBanner(refs, mode)
+  mountStateModal(refs)
 
   mountValControls(refs.valControls, val, (next) => {
     val = next

@@ -7,7 +7,13 @@ import { DEFAULT_VAL, type JevState, type RunMode } from '../../src/core/types'
 import { SAMPLE_RUN } from '../../src/fixtures/sampleRun'
 import { clearError, setModeBanner, showError } from '../../src/ui/banner'
 import { queryRefs, type UiRefs } from '../../src/ui/dom'
-import { clearStatePayload, renderStatePayload } from '../../src/ui/stateViewer'
+import {
+  clearStatePayload,
+  closeStateModal,
+  mountStateModal,
+  openStateModal,
+  renderStatePayload,
+} from '../../src/ui/stateViewer'
 
 /** Mount the shipped markup, minus the module script jsdom must not run. */
 function mountShippedMarkup(): void {
@@ -28,6 +34,13 @@ function sampleState(): JevState {
 
 function payloadText(refs: UiRefs): string {
   return refs.stateViewer.querySelector('.state-json')?.textContent ?? ''
+}
+
+/** The gutter's digits, in the order they are painted. */
+function lineNumbers(refs: UiRefs): string[] {
+  return [...refs.stateViewer.querySelectorAll('.state-line-number')].map(
+    (number) => number.textContent ?? '',
+  )
 }
 
 describe('renderStatePayload', () => {
@@ -77,10 +90,42 @@ describe('renderStatePayload', () => {
     expect(payloadText(refs)).not.toContain(first.descriptor)
   })
 
-  it('leaves the viewer collapsed, so the payload costs no fold space', () => {
+  it('numbers every line of the payload, from one', () => {
     renderStatePayload(refs, sampleState())
 
-    expect(refs.stateViewer.open).toBe(false)
+    const lines = payloadText(refs).split('\n')
+
+    expect(lines.length).toBeGreaterThan(1)
+    expect(lineNumbers(refs)).toEqual(lines.map((_unused, index) => String(index + 1)))
+  })
+
+  it('keeps the numbers out of the payload, so a copy of it still parses', () => {
+    renderStatePayload(refs, sampleState())
+
+    expect(() => JSON.parse(payloadText(refs))).not.toThrow()
+    expect(payloadText(refs).startsWith('1')).toBe(false)
+  })
+
+  it('renumbers rather than stacking a second gutter', () => {
+    renderStatePayload(refs, sampleState())
+    renderStatePayload(refs, sampleState())
+
+    expect(refs.stateViewer.querySelectorAll('.state-line-numbers')).toHaveLength(1)
+    expect(lineNumbers(refs)).toHaveLength(payloadText(refs).split('\n').length)
+  })
+
+  it('leaves the modal as it found it, so a re-ask does not raise a panel', () => {
+    renderStatePayload(refs, sampleState())
+
+    expect(refs.stateModal.hidden).toBe(true)
+  })
+
+  it('opens the viewer to the opener only once there is a payload', () => {
+    expect(refs.stateOpen.disabled).toBe(true)
+
+    renderStatePayload(refs, sampleState())
+
+    expect(refs.stateOpen.disabled).toBe(false)
   })
 
   it('is taken back down by clearStatePayload', () => {
@@ -88,6 +133,99 @@ describe('renderStatePayload', () => {
     clearStatePayload(refs)
 
     expect(refs.stateViewer.querySelector('.state-json')).toBeNull()
+    expect(refs.stateViewer.querySelector('.state-line-number')).toBeNull()
+  })
+
+  it('says why it is empty, and shuts the opener, when the payload is cleared', () => {
+    renderStatePayload(refs, sampleState())
+    clearStatePayload(refs)
+
+    expect(refs.stateViewer.querySelector('.state-empty')?.textContent).toContain('No run yet')
+    expect(refs.stateOpen.disabled).toBe(true)
+  })
+})
+
+describe('the state modal', () => {
+  let refs: UiRefs
+
+  beforeEach(() => {
+    mountShippedMarkup()
+    refs = queryRefs(document)
+    mountStateModal(refs)
+    renderStatePayload(refs, sampleState())
+  })
+
+  it('ships closed, over a viewer that admits it has nothing yet', () => {
+    mountShippedMarkup()
+
+    const fresh = queryRefs(document)
+
+    expect(fresh.stateModal.hidden).toBe(true)
+    expect(fresh.stateOpen.disabled).toBe(true)
+    expect(fresh.stateViewer.querySelector('.state-empty')).not.toBeNull()
+  })
+
+  it('declares itself a modal dialog', () => {
+    expect(refs.stateModal.getAttribute('role')).toBe('dialog')
+    expect(refs.stateModal.getAttribute('aria-modal')).toBe('true')
+  })
+
+  it('opens on the opener, and puts the keyboard inside', () => {
+    refs.stateOpen.click()
+
+    expect(refs.stateModal.hidden).toBe(false)
+    expect(document.activeElement).toBe(refs.stateClose)
+  })
+
+  it('closes on Close, and hands the keyboard back to the opener', () => {
+    refs.stateOpen.click()
+    refs.stateClose.click()
+
+    expect(refs.stateModal.hidden).toBe(true)
+    expect(document.activeElement).toBe(refs.stateOpen)
+  })
+
+  it('closes on Escape from anywhere on the page', () => {
+    openStateModal(refs)
+    refs.descriptor.focus()
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+
+    expect(refs.stateModal.hidden).toBe(true)
+    expect(document.activeElement).toBe(refs.stateOpen)
+  })
+
+  it('leaves the descriptor alone when Escape arrives with the modal already shut', () => {
+    refs.descriptor.focus()
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+
+    expect(document.activeElement).toBe(refs.descriptor)
+  })
+
+  it('closes on a click outside the dialog', () => {
+    openStateModal(refs)
+
+    refs.stateModal.querySelector<HTMLElement>('.state-backdrop')?.click()
+
+    expect(refs.stateModal.hidden).toBe(true)
+  })
+
+  it('stays open when the click lands on the payload itself', () => {
+    openStateModal(refs)
+
+    refs.stateViewer.querySelector<HTMLElement>('.state-json')?.click()
+
+    expect(refs.stateModal.hidden).toBe(false)
+  })
+
+  it('ignores a second close, so a stray Escape cannot steal focus twice', () => {
+    openStateModal(refs)
+    closeStateModal(refs)
+    refs.descriptor.focus()
+    closeStateModal(refs)
+
+    expect(document.activeElement).toBe(refs.descriptor)
   })
 })
 

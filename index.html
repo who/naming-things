@@ -27,9 +27,7 @@
             <button id="reask-jev" type="button" class="accent-jev" disabled>Re-ask Jev</button>
           </div>
           <div id="val-controls" class="val-controls" aria-label="Style controls"></div>
-          <details id="state-viewer" class="state-viewer">
-            <summary>State sent to Jev</summary>
-          </details>
+          <button id="state-open" type="button" class="state-open" disabled>State sent to Jev</button>
         </section>
 
         <section id="cards" class="cards" aria-label="Property candidates" aria-live="polite"></section>
@@ -39,6 +37,26 @@
           <div id="jev-pick" class="pick pick-jev"></div>
         </section>
       </main>
+
+      <div
+        id="state-modal"
+        class="state-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="state-modal-title"
+        hidden
+      >
+        <div class="state-backdrop" data-state-dismiss></div>
+        <div class="state-dialog">
+          <div class="state-dialog-head">
+            <h2 id="state-modal-title" class="state-dialog-title">State sent to Jev</h2>
+            <button id="state-close" type="button" class="state-close">Close</button>
+          </div>
+          <div id="state-viewer" class="state-viewer">
+            <p class="state-empty">No run yet — press Run to build the state Jev is asked with.</p>
+          </div>
+        </div>
+      </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
