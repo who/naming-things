@@ -20,7 +20,7 @@ export interface SampleRun {
 
 export const SAMPLE_RUN: SampleRun = {
   descriptor:
-    'A courier delivery job. Dispatch hands the driver a pickup address, a drop-off address, a window to arrive in, and the weight of the parcel. The job moves from accepted to collected to delivered, and each hop is stamped with the time it happened and the driver who did it.',
+    'A DeliveryJob in a courier dispatch system, holding the pickup address, the drop-off address, the time the driver has to arrive by and the moment the parcel was collected. The property to name is the weight of that parcel, recorded in whole grams at the depot scale and never absent. Dispatch sums it across a van load to check against the axle limit, so the name has to hold its own beside a capacity figure.',
   code: [
     'interface DeliveryJob {',
     '  pickupAddress: string',

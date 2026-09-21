@@ -108,6 +108,14 @@ body {
   text-transform: uppercase;
 }
 
+/* The help line belongs to the label above it, so it closes the column gap. */
+.field-help {
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+  margin: -0.5rem 0 0;
+  max-width: 62ch;
+}
+
 #descriptor {
   background: var(--panel);
   border: 1px solid var(--panel-edge);
