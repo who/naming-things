@@ -264,15 +264,17 @@ button.accent-jev:not(:disabled) {
 }
 
 /*
- * Casing, taste and the three weights are a second conversation. A first run
- * needs the brief and the three buttons above it and nothing else, so the rest
- * sits behind a native disclosure that starts closed: `details` already knows
- * how to be opened from the keyboard and how to tell a screen reader whether it
+ * Casing, taste and the three weights are a second conversation, but one a
+ * first visit should be able to see it is having: the panel starts open, so the
+ * chips and the sliders are on screen without a click. It stays a native
+ * disclosure rather than becoming a plain block, because a visitor who wants
+ * the column back should be able to fold it away — and `details` already knows
+ * how to be worked from the keyboard and how to tell a screen reader whether it
  * is open, which a button and a hidden panel would have to be taught.
  *
- * Closed is a presentation state, not an absence. The controls mount into this
- * panel at startup whether or not anyone opens it, so a weight moved and then
- * folded away is still the weight a later run is sent.
+ * Folded is a presentation state, not an absence. The controls mount into this
+ * panel at startup whether or not it is open, so a weight moved and then folded
+ * away is still the weight a later run is sent.
  */
 .advanced-options {
   background: var(--panel);
