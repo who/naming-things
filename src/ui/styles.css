@@ -198,11 +198,11 @@ body {
   max-width: 62ch;
 }
 
-/* The shell is the element the waiting border is drawn on, so it takes the
-   growth the textarea used to take directly from the controls column. */
+/* The shell is the element the waiting border is drawn on, so it wraps the box
+   and stops there. A shell still taking the controls column's leftover height
+   would run its purple edge around empty space below a capped textarea. */
 .activity-card {
   display: flex;
-  flex: 1;
   min-height: 0;
   position: relative;
 }
@@ -214,7 +214,13 @@ body {
   color: inherit;
   flex: 1;
   font: inherit;
-  min-height: 9rem;
+  /* One height, empty or full: 144px, the size the box was already sitting at
+     on screen. The floor and the ceiling are written in the same unit on
+     purpose, because a floor in rem outgrows a ceiling in px the moment someone
+     reads at a larger base size, and the cap would quietly stop applying to the
+     people most likely to paste a long brief in. */
+  max-height: 144px;
+  min-height: 144px;
   /* Above the travelling gradient painted behind it, so the purple survives
      only in the couple of pixels the box does not cover. */
   position: relative;
