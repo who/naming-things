@@ -575,6 +575,24 @@ button.accent-jev:not(:disabled) {
   text-transform: none;
 }
 
+/* How long that side took, beside the heading it belongs to. Tabular figures,
+   because the two badges sit side by side and durations that shifted their
+   digits around would be harder to compare than to read. */
+.pick-title-elapsed {
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+}
+
+/* The count-up, for as long as the answer has not arrived. Same tabular figures
+   for a steadier reason: this number changes every frame, and proportional
+   digits would make the line twitch while a visitor watched it. */
+.pick-elapsed {
+  color: var(--ink-dim);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  margin: 0.35rem 0 0;
+}
+
 .pick-name {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 1.05rem;

@@ -82,6 +82,15 @@ export interface RunResult {
 /** Where a run has got to, for progressive rendering. */
 export type RunStage = 'candidates' | 'llmPick' | 'jevPick'
 
+/**
+ * The two stages a visitor waits on side by side.
+ *
+ * Named because three parts of the UI take one of these and not the third: the
+ * candidates stage fills the cards and has no badge, no failure of its own to
+ * render and no clock beside a heading, since losing it ends the run outright.
+ */
+export type PickStage = Exclude<RunStage, 'candidates'>
+
 /** Where a run sources its answers from, or that it has nowhere to source them. */
 export type RunMode = 'live' | 'byo' | 'unconfigured'
 

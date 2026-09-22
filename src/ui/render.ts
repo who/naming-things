@@ -13,7 +13,7 @@
  * on top of it. What a run has learned so far lives in the caller.
  */
 
-import type { Candidate, JevPick, LlmPick, RunResult, RunStage } from '../core/types'
+import type { Candidate, JevPick, LlmPick, PickStage, RunResult, RunStage } from '../core/types'
 import { visitorMessage } from './banner'
 import type { UiRefs } from './dom'
 
@@ -23,6 +23,12 @@ const JEV_TITLE = 'Jev Choice'
 
 /** Shown for a confidence the envelope omitted. A missing number is not zero. */
 const NO_CONFIDENCE = '—'
+
+/** The count-up a side wears while it is still being waited on. */
+const ELAPSED_CLASS = 'pick-elapsed'
+
+/** The duration that outlives the wait, worn by the heading instead of the body. */
+const DURATION_CLASS = 'pick-title-elapsed'
 
 /** Worn for the length of one verdict animation, then taken off again. */
 const FLASH_CLASS = 'verdict-flash'
@@ -280,6 +286,83 @@ export function renderVerdict(refs: UiRefs, result: RunResult): void {
 }
 
 /**
+ * Put the running clock where that side's answer will land.
+ *
+ * Two shapes, because the pane is in a different state at each of the places a
+ * wait begins. A fresh run has emptied it, so the waiting view is built whole:
+ * the side's heading over the count-up, which is what keeps a thinking pane
+ * labelled. A re-ask has the previous Jev answer sitting there and that answer
+ * is still the best thing on the page, so the count-up joins it rather than
+ * taking its place.
+ *
+ * Every frame after the first finds a count-up already there and writes one
+ * string into it. That is the whole reason this is not a rebuild: it runs on
+ * every animation frame for as long as a model takes to answer, and a pane
+ * replaced sixty times a second would throw away the selection, the scroll
+ * position and the accessibility tree of the thing underneath it.
+ */
+export function renderPickWaiting(refs: UiRefs, stage: PickStage, elapsed: string): void {
+  const region = stageRegion(refs, stage)
+  const running = region.querySelector<HTMLElement>(`.${ELAPSED_CLASS}`)
+
+  if (running !== null) {
+    running.textContent = elapsed
+
+    return
+  }
+
+  const doc = region.ownerDocument
+  const counter = element(doc, 'p', ELAPSED_CLASS, elapsed)
+
+  if (region.childElementCount === 0) {
+    region.append(
+      element(doc, 'h2', 'pick-title', stage === 'llmPick' ? LLM_TITLE : JEV_TITLE),
+      counter,
+    )
+
+    return
+  }
+
+  region.append(counter)
+}
+
+/**
+ * Take the running clock back off again.
+ *
+ * For a wait that ended with nothing to put in its place: a re-ask that failed
+ * leaves the previous answer standing, and a number frozen under that answer
+ * would read as the time it took rather than as the time an attempt spent
+ * before giving up.
+ */
+export function clearPickWaiting(refs: UiRefs, stage: PickStage): void {
+  stageRegion(refs, stage).querySelector(`.${ELAPSED_CLASS}`)?.remove()
+}
+
+/**
+ * Write how long that side took beside its heading.
+ *
+ * The heading is where a finished duration belongs. The body is the answer, and
+ * a measurement of the wait should not be sitting next to the name that was
+ * chosen once the wait is over. It is written after the pick is rendered rather
+ * than during it, because rendering replaces the whole pane and would carry the
+ * duration out with everything else that was there.
+ *
+ * A pane with no heading has had nothing rendered into it, and is left alone: a
+ * bare number in an empty badge measures nothing a visitor can see.
+ */
+export function renderPickDuration(refs: UiRefs, stage: PickStage, elapsed: string): void {
+  const title = stageRegion(refs, stage).querySelector('.pick-title')
+
+  if (title === null) {
+    return
+  }
+
+  // A re-ask replaces the previous duration rather than lining up beside it.
+  title.querySelector(`.${DURATION_CLASS}`)?.remove()
+  title.append(element(title.ownerDocument, 'span', DURATION_CLASS, ` · ${elapsed}`))
+}
+
+/**
  * Mark one stage as still working, independently of the other two.
  *
  * `aria-busy` rides along with the class so the live regions announce the wait
@@ -301,11 +384,7 @@ export function setStageLoading(refs: UiRefs, stage: RunStage, loading: boolean)
  * read as closely as the pick is, and an upstream sentence rendered there would
  * be the one place a visitor is shown text nobody wrote for them.
  */
-export function renderStageError(
-  refs: UiRefs,
-  stage: Exclude<RunStage, 'candidates'>,
-  error: Error,
-): void {
+export function renderStageError(refs: UiRefs, stage: PickStage, error: Error): void {
   renderFailure(
     stageRegion(refs, stage),
     stage === 'llmPick' ? LLM_TITLE : JEV_TITLE,

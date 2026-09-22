@@ -8,6 +8,7 @@ import type { Candidate, RunResult, RunStage, StyleVal } from './core/types'
 import { setActivityWaiting } from './ui/activityCard'
 import { clearError, RANDOMIZE_BUSY, setModeBanner, showBusy, showError } from './ui/banner'
 import { queryRefs, type UiRefs } from './ui/dom'
+import { createPickTimers, type PickTimers } from './ui/pickTimer'
 import {
   clearResults,
   renderCandidates,
@@ -54,13 +55,21 @@ function showStatePayload(refs: UiRefs, run: RunResult, val: StyleVal): void {
  * stops waiting the moment its event arrives, which is what makes a slow Jev
  * visible as a slow Jev rather than as a slow page.
  */
-async function executeRun(refs: UiRefs, client: ApiClient, val: StyleVal): Promise<RunResult> {
+async function executeRun(
+  refs: UiRefs,
+  client: ApiClient,
+  val: StyleVal,
+  timers: PickTimers,
+): Promise<RunResult> {
   let candidates: readonly Candidate[] = []
   const highlight = { llm: '', jev: '' }
 
   clearResults(refs)
   clearError(refs)
   clearStatePayload(refs)
+  // The previous run's two durations went out with its cards. Forgetting them
+  // here is what stops one of them reappearing beside an answer it never timed.
+  timers.reset()
 
   for (const stage of STAGES) {
     setStageLoading(refs, stage, true)
@@ -70,7 +79,9 @@ async function executeRun(refs: UiRefs, client: ApiClient, val: StyleVal): Promi
     setStageLoading(refs, event.stage, false)
 
     if (event.failed) {
+      timers.stop(event.stage)
       renderStageError(refs, event.stage, event.error)
+      timers.showDuration(event.stage)
 
       return
     }
@@ -78,14 +89,23 @@ async function executeRun(refs: UiRefs, client: ApiClient, val: StyleVal): Promi
     switch (event.stage) {
       case 'candidates':
         candidates = event.candidates
+        // Both judges are asked the instant this event lands, which makes it
+        // the moment their waits begin. Timing from the click instead would
+        // charge each side for the draft it did not write.
+        timers.start('llmPick')
+        timers.start('jevPick')
         break
       case 'llmPick':
         highlight.llm = event.llm.name
+        timers.stop('llmPick')
         renderLlmPick(refs, event.llm)
+        timers.showDuration('llmPick')
         break
       case 'jevPick':
         highlight.jev = event.jev.choice
+        timers.stop('jevPick')
         renderJevPick(refs, event.jev, candidates)
+        timers.showDuration('jevPick')
         break
     }
 
@@ -100,10 +120,14 @@ async function executeRun(refs: UiRefs, client: ApiClient, val: StyleVal): Promi
 
     return result
   } finally {
-    // A run that threw before its stages reported still has to stop spinning.
+    // A run that threw before its stages reported still has to stop spinning,
+    // and a clock nothing is coming back to stop would count on forever.
     for (const stage of STAGES) {
       setStageLoading(refs, stage, false)
     }
+
+    timers.stop('llmPick')
+    timers.stop('jevPick')
   }
 }
 
@@ -122,19 +146,32 @@ async function executeReask(
   client: ApiClient,
   previous: RunResult,
   val: StyleVal,
+  timers: PickTimers,
 ): Promise<RunResult> {
   clearError(refs)
   setStageLoading(refs, 'jevPick', true)
+  // Only Jev is being asked again, so only Jev's clock restarts. The plain
+  // model's duration is still true of the answer still on screen beside it.
+  timers.start('jevPick')
 
   try {
     const result = await reaskJev(client, previous, val)
 
+    timers.stop('jevPick')
     renderJevPick(refs, result.jev, result.candidates)
+    timers.showDuration('jevPick')
     renderCandidates(refs, result.candidates, { llm: result.llm.name, jev: result.jev.choice })
     renderVerdict(refs, result)
     showStatePayload(refs, result, result.val)
 
     return result
+  } catch (reason: unknown) {
+    // The previous answer stays, so the count-up over it goes: a number left
+    // under an answer this attempt never replaced would be read as that
+    // answer's, and it is a failed attempt's.
+    timers.clear('jevPick')
+
+    throw reason
   } finally {
     setStageLoading(refs, 'jevPick', false)
   }
@@ -182,6 +219,8 @@ export function bootstrap(doc: Document = document): UiRefs {
     return refs
   }
 
+  const timers = createPickTimers(refs)
+
   let running = false
   let randomizing = false
   let val = loadVal()
@@ -198,6 +237,7 @@ export function bootstrap(doc: Document = document): UiRefs {
    */
   const clearPreviousRun = (): void => {
     clearResults(refs)
+    timers.reset()
     clearStatePayload(refs)
     clearError(refs)
     lastRun = null
@@ -282,7 +322,7 @@ export function bootstrap(doc: Document = document): UiRefs {
     running = true
     refs.run.disabled = true
 
-    void executeRun(refs, client, val)
+    void executeRun(refs, client, val, timers)
       .then((result) => {
         lastRun = result
       })
@@ -315,7 +355,7 @@ export function bootstrap(doc: Document = document): UiRefs {
     refs.run.disabled = true
     refs.reaskJev.disabled = true
 
-    void executeReask(refs, client, previous, val)
+    void executeReask(refs, client, previous, val, timers)
       .then((result) => {
         lastRun = result
       })
