@@ -157,7 +157,7 @@ describe('generateCandidates', () => {
     expect(payload.tool_choice).toEqual({ type: 'tool', name: 'propose_properties' })
     expect(payload.tools[0].input_schema.properties.properties.minItems).toBe(10)
     expect(payload.tools[0].input_schema.properties.properties.maxItems).toBe(10)
-    expect(payload.temperature).toBe(0.7)
+    expect(payload.temperature).toBe(1)
     expect(payload.messages[0].content).toContain(DESCRIPTOR)
   })
 
