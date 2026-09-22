@@ -112,6 +112,35 @@ describe('renderCandidates', () => {
     expect(jevRow?.classList.contains('row-pick-jev')).toBe(true)
   })
 
+  it('starts the orbs of two different picked rows at different points', () => {
+    renderCandidates(refs, sampleCandidates(), {
+      llm: SAMPLE_RUN.llm.name,
+      jev: SAMPLE_RUN.jev.choice,
+    })
+
+    const llmRow = refs.cards.querySelector<HTMLElement>(`[data-name="${SAMPLE_RUN.llm.name}"]`)
+    const jevRow = refs.cards.querySelector<HTMLElement>(`[data-name="${SAMPLE_RUN.jev.choice}"]`)
+    const phase = (row: HTMLElement | null): string =>
+      row?.style.getPropertyValue('--pick-phase') ?? ''
+
+    // One phase for both rows would run the two orbs round their borders in
+    // step, stacked in a column, and the disagreement would read as a single
+    // pick smeared over two rows.
+    expect(phase(llmRow)).not.toBe('')
+    expect(phase(jevRow)).not.toBe(phase(llmRow))
+  })
+
+  it('leaves the rows nobody picked without a starting point', () => {
+    renderCandidates(refs, sampleCandidates(), { llm: SAMPLE_RUN.llm.name, jev: '' })
+
+    const unpicked = [...refs.cards.querySelectorAll<HTMLElement>('.candidate-row')].filter(
+      (row) => !row.classList.contains('row-pick-llm'),
+    )
+
+    expect(unpicked.length).toBeGreaterThan(0)
+    expect(unpicked.every((row) => row.style.getPropertyValue('--pick-phase') === '')).toBe(true)
+  })
+
   it('puts both marks on one row when the two judges agree', () => {
     const agreed = SAMPLE_RUN.llm.name
 

@@ -62,6 +62,23 @@ export interface PickHighlight {
 const LLM_PICK_CLASS = 'row-pick-llm'
 const JEV_PICK_CLASS = 'row-pick-jev'
 
+/**
+ * The custom property a picked row hands the stylesheet, and the stride that
+ * fills it.
+ *
+ * Three tenths of a lap further round per row down the table, wrapped, so ten
+ * rows take the ten tenths in a different order and no two of them start their
+ * orb at the same point on the border. Two judges that chose different rows
+ * would otherwise run their orbs in lockstep, stacked in one column, and the
+ * pair would read as a single pick smeared over two rows rather than as the
+ * disagreement it is. The offset comes from where the row sits rather than
+ * from a draw, so a re-ask that moves an orb to another row puts it where that
+ * row's orb has always started.
+ */
+const PICK_PHASE_PROP = '--pick-phase'
+const PICK_PHASE_STRIDE = 3
+const PICK_PHASE_STEPS = 10
+
 /** The columns, in the order a row lays them out. */
 const COLUMN_TITLES: readonly string[] = ['Name', 'Type', 'Why']
 
@@ -139,24 +156,43 @@ function headerRow(doc: Document): HTMLElement {
   return head
 }
 
+/** How far round the border row `index` starts its orb, in laps. */
+function pickPhase(index: number): string {
+  return String(((index * PICK_PHASE_STRIDE) % PICK_PHASE_STEPS) / PICK_PHASE_STEPS)
+}
+
 /**
  * One candidate as a row, wearing a class for each judge that chose it.
  *
  * The name is the row's header rather than another cell: it is what the other
  * two columns are about, and it is the string both badges below echo.
  */
-function candidateRow(doc: Document, candidate: Candidate, highlight: PickHighlight): HTMLElement {
+function candidateRow(
+  doc: Document,
+  candidate: Candidate,
+  highlight: PickHighlight,
+  index: number,
+): HTMLElement {
   const row = element(doc, 'div', 'candidate-row')
+  const llmPicked = candidate.name === highlight.llm
+  const jevPicked = candidate.name === highlight.jev
 
   row.setAttribute('role', 'row')
   row.dataset.name = candidate.name
 
-  if (candidate.name === highlight.llm) {
+  if (llmPicked) {
     row.classList.add(LLM_PICK_CLASS)
   }
 
-  if (candidate.name === highlight.jev) {
+  if (jevPicked) {
     row.classList.add(JEV_PICK_CLASS)
+  }
+
+  // Only a picked row is carrying an orb, and only a picked row is told where
+  // on its border to start one. An unpicked row left holding a phase would be
+  // an instruction for an animation that is not running.
+  if (llmPicked || jevPicked) {
+    row.style.setProperty(PICK_PHASE_PROP, pickPhase(index))
   }
 
   row.append(
@@ -191,7 +227,7 @@ export function renderCandidates(
   grid.setAttribute('role', 'table')
   grid.append(
     headerRow(doc),
-    ...candidates.map((candidate) => candidateRow(doc, candidate, highlight)),
+    ...candidates.map((candidate, index) => candidateRow(doc, candidate, highlight, index)),
   )
   refs.cards.replaceChildren(grid)
 }

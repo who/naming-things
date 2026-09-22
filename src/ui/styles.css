@@ -995,6 +995,12 @@ button.accent-action.is-inviting:not(:disabled) {
 .candidate-row.row-pick-llm::before,
 .candidate-row.row-pick-jev::after {
   animation: pick-orbit var(--pick-period) linear infinite;
+  /* Every row starts its lap somewhere else on the border. The renderer writes
+     the fraction; a negative delay of that much of a lap means the orb is
+     already that far round on the first frame. Rows with no fraction of their
+     own fall back to the top of the lap, which is where a single orb has
+     always started. */
+  animation-delay: calc(var(--pick-period) * var(--pick-phase, 0) * -1);
   border-radius: calc(var(--radius) + 2px);
   content: '';
   inset: -2px;
@@ -1029,9 +1035,11 @@ button.accent-action.is-inviting:not(:disabled) {
    together the two would sit under one another and read as a single fatter orb
    in whichever colour painted last, which would hide the one thing the row has
    to say — that both judges landed on it. A negative delay puts blue behind
-   orange from the first frame, so they chase instead. */
+   orange from the first frame, so they chase instead. The third is measured
+   from the row's own starting point rather than from the top of the lap, so
+   the chase survives wherever the row sits in the table. */
 .candidate-row.row-pick-llm.row-pick-jev::after {
-  animation-delay: calc(var(--pick-period) / -3);
+  animation-delay: calc(var(--pick-period) * var(--pick-phase, 0) * -1 - var(--pick-period) / 3);
 }
 
 /* An angle has to be a registered custom property to be interpolated; an engine
