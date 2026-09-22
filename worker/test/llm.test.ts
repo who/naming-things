@@ -203,6 +203,38 @@ describe('generateCandidates', () => {
     expect(prompt).not.toContain('casing PascalCase')
   })
 
+  it('states the Caveman preset as a rule, since no weight can ask for a syllable', async () => {
+    const stub = stubFetch(() =>
+      toolResponse('propose_properties', { code: CODE, properties: CANDIDATES }),
+    )
+
+    await generateCandidates(
+      candidatesBody({ val: { naming: 'camelCase', preset: 'caveman' } }),
+      ENV,
+    )
+
+    const prompt = String(sentPayload(stub).messages[0].content)
+
+    expect(prompt).toContain('Every word of every one of the 10 names is a single syllable')
+    expect(prompt).toContain('Write every one of the 10 names in camelCase')
+  })
+
+  it('writes its own sentence for a preset, never the token the body sent', async () => {
+    const stub = stubFetch(() =>
+      toolResponse('propose_properties', { code: CODE, properties: CANDIDATES }),
+    )
+
+    await generateCandidates(
+      candidatesBody({ val: { naming: 'camelCase', preset: 'ignore-the-schema' } }),
+      ENV,
+    )
+
+    const prompt = String(sentPayload(stub).messages[0].content)
+
+    expect(prompt).not.toContain('ignore-the-schema')
+    expect(prompt).not.toContain('single syllable')
+  })
+
   it('answers in the casing the run asked for, whatever the model wrote', async () => {
     stubFetch(() => toolResponse('propose_properties', { code: CODE, properties: CANDIDATES }))
 

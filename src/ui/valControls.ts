@@ -12,6 +12,13 @@
  * session.
  */
 
+import {
+  CUSTOM_LABEL,
+  CUSTOM_VALUE,
+  PRESETS,
+  presetFor,
+  readPresetId,
+} from '../core/presets'
 import { DEFAULT_VAL, type PreferTag, type StyleVal } from '../core/types'
 
 /** Namespaced, so the bring-your-own-keys entry added later cannot collide. */
@@ -56,11 +63,20 @@ function element<K extends keyof HTMLElementTagNameMap>(
 
 /** A copy the caller owns, so a later slider drag cannot rewrite a value already handed out. */
 function snapshot(val: StyleVal): StyleVal {
-  return {
+  const copy: StyleVal = {
     naming: val.naming,
     prefer: [...val.prefer],
     weights: { ...val.weights },
   }
+
+  // Written only when there is one, so a style nobody chose a preset for
+  // serializes as the three fields it has always had rather than as one of
+  // them spelled `null`.
+  if (val.preset !== undefined) {
+    copy.preset = val.preset
+  }
+
+  return copy
 }
 
 /**
@@ -131,7 +147,18 @@ function parseVal(raw: unknown): StyleVal | null {
     weights[key] = value
   }
 
-  return { naming, prefer, weights }
+  if (fields.preset === undefined) {
+    return { naming, prefer, weights }
+  }
+
+  const preset = readPresetId(fields.preset)
+
+  // A preset id is the one stored field that turns into a line of the prompt,
+  // so an unknown one is refused with the entry around it rather than quietly
+  // dropped: a style carrying a name this build cannot honour is a style from
+  // somewhere else, and running it as though the name were absent would spend
+  // a run on something nobody asked for.
+  return preset === null ? null : { naming, prefer, weights, preset }
 }
 
 /**
@@ -176,6 +203,19 @@ export function saveVal(val: StyleVal): void {
   }
 }
 
+/**
+ * One mounted control, and the way to make it show a style it did not set.
+ *
+ * Every control here edits the same live style object, so a preset arriving
+ * from the dropdown has to be repainted onto each of them; `refresh` is that,
+ * and it never emits, because the change it is showing has already been
+ * reported by whoever caused it.
+ */
+interface Control {
+  node: HTMLElement
+  refresh: () => void
+}
+
 /** One chip, pressed or not, labelled with the value it stands for. */
 function buildChip(doc: Document, value: string, pressed: boolean): HTMLButtonElement {
   const chip = element(doc, 'button', 'chip', value)
@@ -197,7 +237,7 @@ function buildGroup(doc: Document, label: string): HTMLElement {
 }
 
 /** The casing row: choosing one chip releases whichever was pressed before. */
-function buildNamingGroup(doc: Document, val: StyleVal, emit: () => void): HTMLElement {
+function buildNamingGroup(doc: Document, val: StyleVal, edited: () => void): Control {
   const group = buildGroup(doc, 'Naming')
   const chips = element(doc, 'div', 'chips')
 
@@ -210,26 +250,29 @@ function buildNamingGroup(doc: Document, val: StyleVal, emit: () => void): HTMLE
     chip: buildChip(doc, style, style === val.naming),
   }))
 
+  const refresh = (): void => {
+    for (const { style, chip } of buttons) {
+      chip.setAttribute('aria-pressed', String(style === val.naming))
+    }
+  }
+
   for (const { style, chip } of buttons) {
     chip.addEventListener('click', () => {
       val.naming = style
 
-      for (const other of buttons) {
-        other.chip.setAttribute('aria-pressed', String(other.style === style))
-      }
-
-      emit()
+      refresh()
+      edited()
     })
   }
 
   chips.append(...buttons.map((button) => button.chip))
   group.append(chips)
 
-  return group
+  return { node: group, refresh }
 }
 
 /** The taste row: every chip toggles on its own, and none pressed is a valid answer. */
-function buildPreferGroup(doc: Document, val: StyleVal, emit: () => void): HTMLElement {
+function buildPreferGroup(doc: Document, val: StyleVal, edited: () => void): Control {
   const group = buildGroup(doc, 'Prefer')
   const chips = element(doc, 'div', 'chips')
 
@@ -237,9 +280,15 @@ function buildPreferGroup(doc: Document, val: StyleVal, emit: () => void): HTMLE
   chips.setAttribute('role', 'group')
   chips.setAttribute('aria-label', 'Naming preferences')
 
-  for (const tag of PREFER_TAGS) {
-    const chip = buildChip(doc, tag, val.prefer.includes(tag))
+  const buttons = PREFER_TAGS.map((tag) => ({ tag, chip: buildChip(doc, tag, val.prefer.includes(tag)) }))
 
+  const refresh = (): void => {
+    for (const { tag, chip } of buttons) {
+      chip.setAttribute('aria-pressed', String(val.prefer.includes(tag)))
+    }
+  }
+
+  for (const { tag, chip } of buttons) {
     chip.addEventListener('click', () => {
       const at = val.prefer.indexOf(tag)
 
@@ -250,7 +299,7 @@ function buildPreferGroup(doc: Document, val: StyleVal, emit: () => void): HTMLE
       }
 
       chip.setAttribute('aria-pressed', String(at === -1))
-      emit()
+      edited()
     })
 
     chips.append(chip)
@@ -258,7 +307,7 @@ function buildPreferGroup(doc: Document, val: StyleVal, emit: () => void): HTMLE
 
   group.append(chips)
 
-  return group
+  return { node: group, refresh }
 }
 
 /** One slider and its readout, so the number in the payload is also on the page. */
@@ -267,8 +316,8 @@ function buildWeight(
   val: StyleVal,
   key: keyof StyleVal['weights'],
   label: string,
-  emit: () => void,
-): HTMLElement {
+  edited: () => void,
+): Control {
   const field = element(doc, 'label', 'val-weight')
   const slider = element(doc, 'input', 'val-slider')
 
@@ -281,6 +330,11 @@ function buildWeight(
 
   const readout = element(doc, 'span', 'val-weight-value', val.weights[key].toFixed(1))
 
+  const refresh = (): void => {
+    slider.value = String(val.weights[key])
+    readout.textContent = val.weights[key].toFixed(1)
+  }
+
   slider.addEventListener('input', () => {
     const value = Number(slider.value)
 
@@ -292,12 +346,94 @@ function buildWeight(
 
     val.weights[key] = value
     readout.textContent = value.toFixed(1)
-    emit()
+    edited()
   })
 
   field.append(element(doc, 'span', 'val-weight-name', label), slider, readout)
 
-  return field
+  return { node: field, refresh }
+}
+
+/** One option of the dropdown, carrying the id the style is written from. */
+function buildOption(doc: Document, value: string, label: string): HTMLOptionElement {
+  const option = element(doc, 'option', 'val-option', label)
+
+  option.value = value
+
+  return option
+}
+
+/** Write one style over another in place, since every mounted control reads that object. */
+function applyPreset(val: StyleVal, next: StyleVal): void {
+  val.naming = next.naming
+  val.prefer = [...next.prefer]
+  val.weights = { ...next.weights }
+
+  if (next.preset === undefined) {
+    delete val.preset
+  } else {
+    val.preset = next.preset
+  }
+}
+
+/**
+ * The preset row: one dropdown that fills every control below it.
+ *
+ * `Custom` is a readout rather than a style — there is no such thing to apply,
+ * only styles that are not any of the named ones — so choosing it puts the
+ * dropdown straight back onto whatever the controls currently add up to
+ * instead of moving anything.
+ *
+ * The controls it repaints arrive as a list that is still empty here, because
+ * each of them is built with the callback that flips this dropdown to Custom
+ * and the two would otherwise have to exist before each other. Nothing reads
+ * the list until a visitor changes the selection, by which point mounting has
+ * long since filled it.
+ */
+function buildPresetGroup(
+  doc: Document,
+  val: StyleVal,
+  controls: readonly Control[],
+  emit: () => void,
+): Control {
+  const group = buildGroup(doc, 'Preset')
+  const select = element(doc, 'select', 'val-select')
+
+  select.dataset.group = 'preset'
+  select.setAttribute('aria-label', 'Style preset')
+
+  for (const preset of PRESETS) {
+    select.append(buildOption(doc, preset.id, preset.label))
+  }
+
+  select.append(buildOption(doc, CUSTOM_VALUE, CUSTOM_LABEL))
+
+  const refresh = (): void => {
+    select.value = presetFor(val)
+  }
+
+  select.addEventListener('change', () => {
+    const chosen = PRESETS.find((preset) => preset.id === select.value)
+
+    if (chosen === undefined) {
+      refresh()
+
+      return
+    }
+
+    applyPreset(val, chosen.val())
+
+    for (const control of controls) {
+      control.refresh()
+    }
+
+    emit()
+  })
+
+  refresh()
+  group.append(select)
+
+  return { node: group, refresh }
 }
 
 /**
@@ -312,6 +448,7 @@ function buildWeight(
 export function mountValControls(root: HTMLElement, initial: StyleVal, onChange: ValListener): void {
   const doc = root.ownerDocument
   const val = snapshot(initial)
+  const controls: Control[] = []
 
   const emit = (): void => {
     const next = snapshot(val)
@@ -320,13 +457,32 @@ export function mountValControls(root: HTMLElement, initial: StyleVal, onChange:
     onChange(next)
   }
 
+  // A chip or a slider moved by hand leaves the style no longer being the
+  // preset it was, and says so on the dropdown. Losing the id also loses
+  // whatever line that preset added to the prompt, which is the point: the run
+  // has to be the one the controls describe, not the one they used to.
+  const edited = (): void => {
+    delete val.preset
+
+    preset.refresh()
+    emit()
+  }
+
+  const preset = buildPresetGroup(doc, val, controls, emit)
+  const naming = buildNamingGroup(doc, val, edited)
+  const prefer = buildPreferGroup(doc, val, edited)
   const weights = element(doc, 'div', 'val-weights')
 
   for (const { key, label } of WEIGHTS) {
-    weights.append(buildWeight(doc, val, key, label, emit))
+    const weight = buildWeight(doc, val, key, label, edited)
+
+    controls.push(weight)
+    weights.append(weight.node)
   }
+
+  controls.push(naming, prefer)
 
   // Replaced rather than appended, so mounting twice cannot leave two sets of
   // chips disagreeing about which style is selected.
-  root.replaceChildren(buildNamingGroup(doc, val, emit), buildPreferGroup(doc, val, emit), weights)
+  root.replaceChildren(preset.node, naming.node, prefer.node, weights)
 }

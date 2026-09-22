@@ -20,6 +20,7 @@
 
 import { applyCasing } from '../core/casing'
 import { CANDIDATE_COUNT, parseCandidates } from '../core/parseCandidates'
+import { presetRule } from '../core/presets'
 import type { Candidate, JevPick, JevState, LlmPick, StyleVal } from '../core/types'
 import type { ByoKeys } from './byo'
 import type {
@@ -295,6 +296,19 @@ function casingRule(val: StyleVal): string {
     'than a preference: a name in any other casing is rewritten into this one before anybody reads',
     'it, so a name that only works in the casing you chose for it is a name wasted.',
   ].join('\n')
+}
+
+/**
+ * Everything this run holds the ten names to, in one block.
+ *
+ * A preset that asks for single syllables, or for a type prefix on the front
+ * of every name, is asking for something the chips have no word for, and it is
+ * asked as a requirement for the same reason the casing is: a monosyllable
+ * rule filed under taste comes back as ten ordinary names and a run spent
+ * finding that out.
+ */
+function candidateRules(val: StyleVal): string {
+  return [casingRule(val), presetRule(val)].filter((rule) => rule !== '').join('\n\n')
 }
 
 /**
@@ -803,7 +817,7 @@ export class RemoteApiClient implements ApiClient {
             target.anthropicKey,
             CANDIDATES_TOOL,
             CANDIDATES_SYSTEM,
-            candidatesPrompt(input.descriptor, casingRule(input.val), styleHint(input.val)),
+            candidatesPrompt(input.descriptor, candidateRules(input.val), styleHint(input.val)),
             CANDIDATES_TEMPERATURE,
           )
 

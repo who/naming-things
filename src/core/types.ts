@@ -17,6 +17,27 @@ export interface Candidate {
 export type PreferTag = 'id-like' | 'domain-nouns' | 'booleans-as-isX'
 
 /**
+ * One of the named styles the Preset control offers.
+ *
+ * The id is the only part of a style that can ask a prompt for something the
+ * chips and the sliders cannot express, so it is a closed union rather than a
+ * string: the run matches the token against a table of its own and writes its
+ * own sentence from it, which is what keeps a hand-edited store entry from
+ * becoming an instruction. `src/core/presets.ts` holds what each one sets.
+ */
+export type PresetId =
+  | 'default'
+  | 'enterprise-bean'
+  | 'golf'
+  | 'hungarian-hangover'
+  | 'unix-kernel'
+  | 'rails-ish'
+  | 'data-science'
+  | 'frontend-react'
+  | 'pedantic-types'
+  | 'caveman'
+
+/**
  * Imported naming taste: context for the model, except for the casing.
  *
  * `prefer` and `weights` are weighed against everything else in a brief and
@@ -33,6 +54,14 @@ export interface StyleVal {
     explicitUnits: number
     nullable: number
   }
+  /**
+   * The preset these values came from, while they are still exactly it.
+   *
+   * Absent on a style nobody chose a preset for, and dropped the moment a chip
+   * or a slider moves: a preset that survived being edited would keep asking
+   * for a run the controls no longer describe.
+   */
+  preset?: PresetId
 }
 
 /**

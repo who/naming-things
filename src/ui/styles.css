@@ -456,6 +456,27 @@ button.accent-jev:focus-visible {
   min-width: 4rem;
 }
 
+/* A select inherits none of the page's skin the way a button does, so the
+   preset borrows the chip's: it stands in the same row as the controls it
+   fills and should not read as a piece of the browser sitting among them. */
+.val-select {
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: var(--radius);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  /* Wide enough for the longest preset name, so choosing one cannot shift the
+     chips below it sideways. */
+  min-width: 11rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.val-select:hover {
+  border-color: var(--ink-dim);
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;

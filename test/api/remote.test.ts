@@ -442,6 +442,54 @@ describe('RemoteApiClient, with the visitor’s own keys', () => {
     ])
   })
 
+  it('asks a Caveman run for single syllables alongside the casing', async () => {
+    useTransport(
+      answers({
+        content: [
+          {
+            type: 'tool_use',
+            name: 'propose_properties',
+            input: { code: CODE, properties: CANDIDATES },
+          },
+        ],
+      }),
+    )
+
+    await new RemoteApiClient(KEYS).generateCandidates({
+      descriptor: DESCRIPTOR,
+      val: { ...DEFAULT_VAL(), preset: 'caveman' },
+    })
+
+    const prompt = String((bodyOf(firstCall()).messages as { content: string }[])[0]?.content)
+
+    expect(prompt).toContain('Every word of every one of the 10 names is a single syllable')
+    expect(prompt).toContain('Write every one of the 10 names in camelCase')
+  })
+
+  it('adds no rule for a preset that is only a position of the chips', async () => {
+    useTransport(
+      answers({
+        content: [
+          {
+            type: 'tool_use',
+            name: 'propose_properties',
+            input: { code: CODE, properties: CANDIDATES },
+          },
+        ],
+      }),
+    )
+
+    await new RemoteApiClient(KEYS).generateCandidates({
+      descriptor: DESCRIPTOR,
+      val: { ...DEFAULT_VAL(), preset: 'golf' },
+    })
+
+    const prompt = String((bodyOf(firstCall()).messages as { content: string }[])[0]?.content)
+
+    expect(prompt).not.toContain('single syllable')
+    expect(prompt).not.toContain('golf')
+  })
+
   it('writes a brief through the same forced tool call', async () => {
     useTransport(
       answers({

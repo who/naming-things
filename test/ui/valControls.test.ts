@@ -78,6 +78,26 @@ function chip(root: HTMLElement, group: string, value: string): HTMLButtonElemen
   return found
 }
 
+function presetSelect(root: HTMLElement): HTMLSelectElement {
+  const found = root.querySelector<HTMLSelectElement>('[data-group="preset"]')
+
+  if (found === null) {
+    throw new Error('no preset dropdown')
+  }
+
+  return found
+}
+
+/** Choose an option the way a visitor does: set it, then let the page hear about it. */
+function choosePreset(root: HTMLElement, value: string): HTMLSelectElement {
+  const select = presetSelect(root)
+
+  select.value = value
+  select.dispatchEvent(new Event('change'))
+
+  return select
+}
+
 function slider(root: HTMLElement, weight: string): HTMLInputElement {
   const found = root.querySelector<HTMLInputElement>(`[data-weight="${weight}"]`)
 
@@ -168,6 +188,18 @@ describe('loadVal', () => {
 
   it('falls back to the default when reading storage throws', () => {
     useStorage(blockedStorage())
+
+    expect(loadVal()).toEqual(DEFAULT_VAL())
+  })
+
+  it('round-trips the preset a style was chosen from', () => {
+    saveVal({ ...customVal(), preset: 'caveman' })
+
+    expect(loadVal().preset).toBe('caveman')
+  })
+
+  it('refuses a preset id this build has no rule for, rather than sending it on', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...customVal(), preset: 'cave-man' }))
 
     expect(loadVal()).toEqual(DEFAULT_VAL())
   })
@@ -293,6 +325,92 @@ describe('mountValControls', () => {
     mountValControls(root, DEFAULT_VAL(), record)
 
     expect(root.querySelectorAll('[data-group="naming"]')).toHaveLength(1)
+  })
+
+  it('names the default style on the dropdown, since that is where a first visit stands', () => {
+    mountValControls(root, DEFAULT_VAL(), record)
+
+    expect(presetSelect(root).value).toBe('default')
+  })
+
+  it('offers Caveman, whose single-syllable rule no chip can ask for', () => {
+    mountValControls(root, DEFAULT_VAL(), record)
+
+    const labels = [...presetSelect(root).options].map((option) => option.textContent)
+
+    expect(labels).toContain('Caveman')
+    expect(labels).toContain('Custom')
+  })
+
+  it('writes the chosen preset into the chips, the sliders and the emitted style', () => {
+    mountValControls(root, customVal(), record)
+
+    choosePreset(root, 'caveman')
+
+    expect(chip(root, 'naming', 'camelCase').getAttribute('aria-pressed')).toBe('true')
+    expect(chip(root, 'prefer', 'id-like').getAttribute('aria-pressed')).toBe('false')
+    expect(slider(root, 'shortNames').value).toBe('1')
+    expect(root.querySelectorAll('.val-weight-value')[0]?.textContent).toBe('1.0')
+    expect(seen.at(-1)?.preset).toBe('caveman')
+    expect(seen.at(-1)?.weights).toEqual({ shortNames: 1, explicitUnits: 0, nullable: 0 })
+  })
+
+  it('flips to Custom when a slider moves under a preset, and drops the preset with it', () => {
+    mountValControls(root, DEFAULT_VAL(), record)
+    choosePreset(root, 'caveman')
+
+    const control = slider(root, 'nullable')
+
+    control.value = '0.4'
+    control.dispatchEvent(new Event('input'))
+
+    expect(presetSelect(root).value).toBe('custom')
+    expect(seen.at(-1)?.preset).toBeUndefined()
+  })
+
+  it('flips to Custom when a chip is pressed under a preset', () => {
+    mountValControls(root, DEFAULT_VAL(), record)
+    choosePreset(root, 'unix-kernel')
+
+    chip(root, 'naming', 'PascalCase').click()
+
+    expect(presetSelect(root).value).toBe('custom')
+    expect(seen.at(-1)?.naming).toBe('PascalCase')
+  })
+
+  it('reads Custom for a style that is none of the presets', () => {
+    mountValControls(root, customVal(), record)
+
+    expect(presetSelect(root).value).toBe('custom')
+  })
+
+  it('names the preset again after a reload, because the style still is that preset', () => {
+    mountValControls(root, DEFAULT_VAL(), record)
+    choosePreset(root, 'golf')
+
+    mountValControls(mountPoint(), loadVal(), record)
+
+    expect(presetSelect(document.body).value).toBe('golf')
+  })
+
+  it('changes nothing when Custom is chosen, since it is a readout and not a style', () => {
+    mountValControls(root, DEFAULT_VAL(), record)
+    choosePreset(root, 'golf')
+
+    const emitted = seen.length
+
+    choosePreset(root, 'custom')
+
+    expect(presetSelect(root).value).toBe('golf')
+    expect(seen).toHaveLength(emitted)
+  })
+
+  it('persists the preset, so the next run still asks for what it asks for', () => {
+    mountValControls(root, DEFAULT_VAL(), record)
+
+    choosePreset(root, 'caveman')
+
+    expect(loadVal().preset).toBe('caveman')
   })
 
   it('mounts and keeps emitting when storage is blocked entirely', () => {

@@ -436,6 +436,54 @@ function renderCasingRule(casing: Casing | null): string {
 }
 
 /**
+ * The line each named preset adds to the prompt, keyed by the id a style
+ * carries.
+ *
+ * Only the presets asking for something the chips cannot say are in here: the
+ * rest are positions of those chips and arrive fully described by the style
+ * itself. The Worker writes the sentence and the body supplies nothing but the
+ * token that selects it, which is what keeps a hand-written `val` from
+ * becoming an instruction — an id this build has never heard of picks nothing
+ * and adds no line.
+ *
+ * Spelled here rather than shared with the browser for the reason the casings
+ * are: the page and the Worker deploy on their own schedules, and a Worker
+ * that could only serve its matching Pages build would make every change a
+ * pair of deploys.
+ */
+const PRESET_RULES: Record<string, string> = {
+  caveman: [
+    `Every word of every one of the ${CANDIDATE_COUNT} names is a single syllable. Compounds are fine`,
+    'while each stem is one syllable — processTransaction becomes doDeal, confirmedAtMs becomes',
+    'gotTime — but a name carrying one word of two syllables is not a candidate, whatever else it has',
+    'going for it.',
+  ].join('\n'),
+  'hungarian-hangover': [
+    "Start every name with a short prefix naming the value's type — n for a number, s for a string, b",
+    'for a boolean, dt for a moment in time — and then the name proper: nWeightGrams, bIsPaid,',
+    'dtLastRun. The prefix is part of the name rather than a note about it.',
+  ].join('\n'),
+}
+
+/** The preset's demand as a rule for the prompt, or nothing when it makes none. */
+function renderPresetRule(raw: unknown): string {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    return ''
+  }
+
+  const preset = readTag((raw as Record<string, unknown>).preset)
+
+  return preset === null ? '' : PRESET_RULES[preset] ?? ''
+}
+
+/** Everything this run holds the names to, in the one block the prompt expects. */
+function renderRules(casing: Casing | null, raw: unknown): string {
+  return [renderCasingRule(casing), renderPresetRule(raw)]
+    .filter((rule) => rule !== '')
+    .join('\n\n')
+}
+
+/**
  * The rest of the visitor's imported taste, rendered as a line of advice.
  *
  * Advisory rather than enforced, which is the bargain the rest of the app
@@ -720,7 +768,7 @@ export async function generateCandidates(
     key,
     CANDIDATES_TOOL,
     CANDIDATES_SYSTEM,
-    candidatesPrompt(descriptor, renderCasingRule(casing), renderStyleHint(body.val)),
+    candidatesPrompt(descriptor, renderRules(casing, body.val), renderStyleHint(body.val)),
     CANDIDATES_TEMPERATURE,
   )
 
