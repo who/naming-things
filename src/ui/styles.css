@@ -54,13 +54,27 @@ body {
 }
 
 /* The window is the only vertical scroller: the shell fills a tall viewport and
-   grows past a short one instead of clipping whatever did not fit. */
+   grows past a short one instead of clipping whatever did not fit.
+
+   Wide is where a full-bleed page stops being generous and starts being hard to
+   read: the controls and the ten names drift to opposite edges of an ultrawide
+   monitor, and comparing a name against the verdict beside it becomes a turn of
+   the head. 72rem is about the width the laptop this was drawn for gives it, so
+   the layout a visitor meets on a big screen is the one the columns were spaced
+   for. The cap is inert below that — a narrow window is already under it, and
+   the auto margins have nothing left to centre — so a phone keeps every pixel
+   inside the padding. The background stays on the body and runs edge to edge
+   behind the centred column, because the dark field is the page and the cap is
+   only the measure the content is read at. */
 #app {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
+  margin-inline: auto;
+  max-width: 72rem;
   min-height: 100vh;
   padding: 1.25rem 1.5rem;
+  width: 100%;
 }
 
 /* The title and the credit on one line, at either end of it. The credit rides
