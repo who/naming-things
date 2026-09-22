@@ -33,6 +33,12 @@ jobs:
       - name: Build the app
         env:
           VITE_API_BASE: https://naming-things.who-cf.workers.dev
+          # The cache-busting stamp. Pages serves the document from a CDN for
+          # ten minutes and takes no header configuration, so each deploy gives
+          # the page an id to recognise itself by and a version.json to compare
+          # it against. The attempt number is part of it so re-running this
+          # workflow over an unchanged commit still ships a new id.
+          BUILD_ID: ${{ github.run_id }}-${{ github.run_attempt }}
         run: npm run build
 
       - name: Configure Pages

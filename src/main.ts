@@ -5,6 +5,7 @@ import { createClient } from './api/mode'
 import { pickRandomDescriptor } from './core/descriptors'
 import { buildJevState, reaskJev, runPipeline, type RunStageEvent } from './core/pipeline'
 import type { Candidate, RunResult, RunStage, StyleVal } from './core/types'
+import { watchForNewBuild } from './ops/freshness'
 import { setActivityWaiting } from './ui/activityCard'
 import { clearError, RANDOMIZE_BUSY, setModeBanner, showBusy, showError } from './ui/banner'
 import { queryRefs, type UiRefs } from './ui/dom'
@@ -394,5 +395,9 @@ export function bootstrap(doc: Document = document): UiRefs {
 }
 
 if (document.querySelector(APP_SELECTOR) !== null) {
+  // Beside the page rather than in front of it. The check is a round trip, and
+  // a visitor already on the current build — which is nearly all of them — must
+  // not wait on a request whose answer is that they had nothing to wait for.
+  watchForNewBuild()
   bootstrap()
 }

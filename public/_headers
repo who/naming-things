@@ -1,0 +1,25 @@
+# The cache policy, stated where a host that reads headers files will honour it.
+#
+# GitHub Pages is not such a host: it ignores this file, serves the document
+# from its CDN for ten minutes, and exposes no setting that changes either
+# fact. That is why the build also stamps a build id into the HTML and writes
+# version.json beside it, and why src/ops/freshness.ts reloads a document the
+# deployment has replaced. This file is the same policy written declaratively,
+# so moving the site behind Cloudflare Pages or Netlify is a move rather than a
+# rewrite — and so the intent is readable without reading the browser code.
+
+/
+  Cache-Control: no-cache, must-revalidate
+
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+# The freshness check's own request must never be answered from a cache; the
+# query string it carries is what enforces this where the header is ignored.
+/version.json
+  Cache-Control: no-store
+
+# Hashed by Vite, so a given path's bytes never change. These are the reason a
+# stale document is the whole problem: it names last build's hashes.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
