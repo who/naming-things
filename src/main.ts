@@ -50,8 +50,8 @@ function showStatePayload(refs: UiRefs, run: RunResult, val: StyleVal): void {
  * Drive one run and paint it as it arrives.
  *
  * The two picks land in whatever order they finish, so what the run has learned
- * so far is kept here and the cards are redrawn from it each time: the badge and
- * the highlighted card always agree, whichever judge answered first. Every stage
+ * so far is kept here and the rows are redrawn from it each time: the badge and
+ * the highlighted row always agree, whichever judge answered first. Every stage
  * stops waiting the moment its event arrives, which is what makes a slow Jev
  * visible as a slow Jev rather than as a slow page.
  */
@@ -67,7 +67,7 @@ async function executeRun(
   clearResults(refs)
   clearError(refs)
   clearStatePayload(refs)
-  // The previous run's two durations went out with its cards. Forgetting them
+  // The previous run's two durations went out with its rows. Forgetting them
   // here is what stops one of them reappearing beside an answer it never timed.
   timers.reset()
 
@@ -134,10 +134,10 @@ async function executeRun(
 /**
  * Ask Jev again about the run on the page, and repaint only its half.
  *
- * The cards and the LLM badge deliberately keep their answers: holding one
+ * The table and the LLM badge deliberately keep their answers: holding one
  * judge still is what makes a moved Jev pick readable as the style's doing
- * rather than as a second opinion on a second draft. The cards are redrawn only
- * so the highlighted card goes on agreeing with the badge above it. A re-ask
+ * rather than as a second opinion on a second draft. The rows are redrawn only
+ * so the highlighted row goes on agreeing with the badge above it. A re-ask
  * that fails leaves the previous answer standing, because a good pick is worth
  * more on screen than an empty badge over an error.
  */
@@ -183,7 +183,7 @@ async function executeReask(
  *
  * Randomize goes through the same client Run does, so the brief is written by
  * the same model that will be asked to name things in it. It never starts a
- * run, though it does end one: the cards, the badges and the verdict all
+ * run, though it does end one: the rows, the badges and the verdict all
  * answered the brief being replaced, so they come down with it and the new
  * prose sits alone in the box until the visitor asks for names for it.
  *
@@ -194,7 +194,7 @@ async function executeReask(
  * controls hold is the one the next run carries, and moving a control after a
  * run rewrites the visible payload so the change is readable before Jev is ever
  * asked again. Re-ask Jev then spends that style on a second opinion over the
- * same ten cards, so it stays disabled until a run has left something on the
+ * same ten names, so it stays disabled until a run has left something on the
  * page worth re-asking about. The state viewer is wired here too, and stays shut and unopenable
  * until a run has built a payload worth opening it for.
  */
@@ -233,7 +233,7 @@ export function bootstrap(doc: Document = document): UiRefs {
    * them back in on the same click. Randomize has no run behind it and nothing
    * to put in their place, so the clearing has to be a step of its own — and it
    * has to take the bookkeeping with the pixels: a `lastRun` left standing
-   * would let Re-ask Jev ask a judge about cards that are no longer on screen.
+   * would let Re-ask Jev ask a judge about names that are no longer on screen.
    */
   const clearPreviousRun = (): void => {
     clearResults(refs)
@@ -329,8 +329,8 @@ export function bootstrap(doc: Document = document): UiRefs {
       .catch((reason: unknown) => {
         // A refused descriptor or a lost draft leaves the regions empty, so the
         // reason has to be said out loud or the page just looks broken. The
-        // previous run goes with it: its cards are gone from the page, and
-        // re-asking about cards nobody can see is worse than not re-asking.
+        // previous run goes with it: its rows are gone from the page, and
+        // re-asking about rows nobody can see is worse than not re-asking.
         lastRun = null
         showError(refs, reason)
       })

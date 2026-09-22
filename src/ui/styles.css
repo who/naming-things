@@ -554,17 +554,14 @@ button.accent-activity:focus-visible {
 }
 
 .cards {
-  display: grid;
-  gap: var(--gap);
   grid-area: cards;
-  /* As many cards across as fit, and the region keeps its shape while empty. Ten
-     of them wrap to two rows on a wide screen and to a column on a phone, so the
-     rows size to what they hold and this region scrolls rather than squeezing a
-     card's prose out past its own border. */
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  grid-auto-rows: minmax(min-content, 1fr);
+  /* The region keeps its shape while empty and scrolls once the ten rows are in
+     it, so a long brief never pushes the verdict off the fold. */
   min-height: 16rem;
   overflow-y: auto;
+  /* Room for the two pixels a pick's orb sits outside its row, which the
+     scroller would otherwise clip off the first row and the last. */
+  padding: 2px;
 }
 
 .verdict {
@@ -588,53 +585,91 @@ button.accent-activity:focus-visible {
   border: 1px solid var(--accent-jev);
 }
 
-/* One card: the name in monospace, the type as a pill, the case for it below. */
-.card {
+/* The ten candidates as one table. They differ by a word and a type, and the
+   question in front of a visitor is which to prefer, so they are laid out to be
+   read down a column rather than one box at a time. */
+.candidate-grid {
+  /* One template, shared by every row. Each row draws its own three columns
+     instead of sharing the container's, because a row has to stay a single box
+     for the pick marks to be drawn from its edge — writing the widths once here
+     is what keeps those independent rows reading as columns. */
+  --candidate-columns: minmax(7rem, 1.1fr) minmax(4.5rem, auto) minmax(0, 2.6fr);
+  /* One lap of a pick's orb. Both accents take their speed from it, so the
+     chase further down is a fraction of a lap rather than a second duration
+     that has to be kept in step with this one by hand. */
+  --pick-period: 2.6s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.candidate-head,
+.candidate-row {
+  align-items: baseline;
+  column-gap: 0.75rem;
+  display: grid;
+  grid-template-columns: var(--candidate-columns);
+  padding: 0.5rem 0.65rem;
+}
+
+/* The headings stay put while the rows scroll under them: a column of bare
+   identifiers is only a column once something at the top says what it is. */
+.candidate-head {
+  background: var(--bg);
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  position: sticky;
+  text-transform: uppercase;
+  top: 0;
+  z-index: 2;
+}
+
+.candidate-row {
   background: var(--panel);
   border: 1px solid var(--panel-edge);
   border-radius: var(--radius);
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
   min-width: 0;
-  padding: 0.75rem;
+  /* What the orbs are positioned against, and deliberately without a z-index: a
+     row that opened a stacking context of its own would trap them in front of
+     its background instead of leaving only the ring outside it showing. */
+  position: relative;
 }
 
-.card-name {
+.candidate-name {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.95rem;
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.card-type {
-  align-self: flex-start;
+.candidate-type {
   background: rgba(154, 162, 177, 0.14);
   border-radius: 999px;
   color: var(--ink-dim);
   font-size: 0.72rem;
+  justify-self: start;
   letter-spacing: 0.04em;
   padding: 0.1rem 0.5rem;
 }
 
-.card-why {
+.candidate-why {
   color: var(--ink-dim);
   font-size: 0.85rem;
-  margin: 0;
+  min-width: 0;
 }
 
-/* Each judge marks its own card, so a disagreement is visible up here too. */
-.card-pick-llm {
+/* Each judge marks the row it chose, so a disagreement is visible up here too. */
+.candidate-row.row-pick-llm {
   border-color: var(--accent-llm);
-  box-shadow: inset 0 0 0 1px var(--accent-llm);
 }
 
-.card-pick-jev {
+.candidate-row.row-pick-jev {
   border-color: var(--accent-jev);
-  box-shadow: inset 0 0 0 1px var(--accent-jev);
 }
 
-/* Both on one card: the two accents share it rather than one hiding the other. */
-.card-pick-llm.card-pick-jev {
+/* Both on one row: the two accents share it rather than one hiding the other. */
+.candidate-row.row-pick-llm.row-pick-jev {
   border-color: var(--accent-llm);
   box-shadow: inset 0 0 0 1px var(--accent-jev);
 }
@@ -854,6 +889,76 @@ button.accent-activity:focus-visible {
   z-index: 2;
 }
 
+/* ActivityCard's travelling highlight, borrowed for the answer rather than for
+   the wait: a whole conic gradient turns behind a picked row, and the row's own
+   opaque background covers all of it but the arc clearing the edge, which reads
+   as a single orb running the border. The colours are the legend's, not the
+   purple, because here the motion is saying which judge rather than that
+   something is thinking.
+
+   None of it costs layout. Both orbs are pseudo-elements on a box whose size
+   they never touch, so an answer landing cannot move the row it lands on, nor
+   the nine rows under it. */
+.candidate-row.row-pick-llm::before,
+.candidate-row.row-pick-jev::after {
+  animation: pick-orbit var(--pick-period) linear infinite;
+  border-radius: calc(var(--radius) + 2px);
+  content: '';
+  inset: -2px;
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+}
+
+.candidate-row.row-pick-llm::before {
+  background: conic-gradient(
+    from var(--pick-angle),
+    transparent 0deg,
+    var(--accent-llm) 24deg,
+    #ffc08a 38deg,
+    var(--accent-llm) 52deg,
+    transparent 76deg
+  );
+}
+
+.candidate-row.row-pick-jev::after {
+  background: conic-gradient(
+    from var(--pick-angle),
+    transparent 0deg,
+    var(--accent-jev) 24deg,
+    #a5d0ff 38deg,
+    var(--accent-jev) 52deg,
+    transparent 76deg
+  );
+}
+
+/* Agreement: one row, two orbs, and a third of a lap between them. Started
+   together the two would sit under one another and read as a single fatter orb
+   in whichever colour painted last, which would hide the one thing the row has
+   to say — that both judges landed on it. A negative delay puts blue behind
+   orange from the first frame, so they chase instead. */
+.candidate-row.row-pick-llm.row-pick-jev::after {
+  animation-delay: calc(var(--pick-period) / -3);
+}
+
+/* An angle has to be a registered custom property to be interpolated; an engine
+   that does not register it still shows the orb, just held still. */
+@property --pick-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes pick-orbit {
+  from {
+    --pick-angle: 0deg;
+  }
+
+  to {
+    --pick-angle: 360deg;
+  }
+}
+
 /* An angle has to be a registered custom property to be interpolated; an engine
    that does not register it still shows the gradient, just held still. */
 @property --activity-angle {
@@ -895,6 +1000,18 @@ button.accent-activity:focus-visible {
     grid-template-rows: auto;
   }
 
+  /* Two columns on a phone, with the case for the name under them. Three across
+     a narrow screen would leave the prose a channel four words wide. */
+  .candidate-grid {
+    --candidate-columns: minmax(0, 1fr) auto;
+  }
+
+  .candidate-column:last-child,
+  .candidate-why {
+    grid-column: 1 / -1;
+    padding-top: 0.25rem;
+  }
+
   .verdict {
     grid-template-columns: 1fr;
   }
@@ -904,7 +1021,9 @@ button.accent-activity:focus-visible {
   .verdict-banner.verdict-flash,
   .is-loading::after,
   .activity-card.is-waiting::before,
-  .activity-card.is-waiting::after {
+  .activity-card.is-waiting::after,
+  .candidate-row.row-pick-llm::before,
+  .candidate-row.row-pick-jev::after {
     animation: none;
   }
 

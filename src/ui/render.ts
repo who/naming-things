@@ -2,10 +2,10 @@
  * The run, made visible.
  *
  * Everything a visitor reads after clicking Run is built here: the ten
- * property cards, the two pick badges, the probability bars and the verdict
+ * candidate table, the two pick badges, the probability bars and the verdict
  * strip. Every value on this page is model output, so nothing is ever assigned
  * as markup — each node is constructed and filled through `textContent`, and a
- * candidate named `<img onerror=...>` lands on a card as those literal
+ * candidate named `<img onerror=...>` lands in a cell as those literal
  * characters rather than as an element.
  *
  * The functions are stateless and idempotent: each one replaces the contents of
@@ -38,12 +38,25 @@ const FLASH_CLASS = 'verdict-flash'
  *
  * An empty string means that side has not answered yet, or answered with the
  * blank stand-in a failed stage leaves behind — no candidate name can be empty,
- * so neither value ever highlights a card by accident.
+ * so neither value ever highlights a row by accident.
  */
-export interface CardHighlight {
+export interface PickHighlight {
   llm: string
   jev: string
 }
+
+/**
+ * The class a row wears for each judge that picked it.
+ *
+ * Spelled here because the stylesheet hangs a travelling orb on each of them,
+ * and an orb whose class the renderer stopped writing would be an animation
+ * nothing on the page could start.
+ */
+const LLM_PICK_CLASS = 'row-pick-llm'
+const JEV_PICK_CLASS = 'row-pick-jev'
+
+/** The columns, in the order a row lays them out. */
+const COLUMN_TITLES: readonly string[] = ['Name', 'Type', 'Why']
 
 /** Build one filled element, without ever going through `innerHTML`. */
 function element<K extends keyof HTMLElementTagNameMap>(
@@ -86,43 +99,94 @@ function renderFailure(region: HTMLElement, title: string, message: string): voi
   )
 }
 
+/** One cell, carrying the table role its place in the row gives it. */
+function cell<K extends keyof HTMLElementTagNameMap>(
+  doc: Document,
+  tag: K,
+  className: string,
+  text: string,
+  role: string,
+): HTMLElementTagNameMap[K] {
+  const node = element(doc, tag, className, text)
+
+  node.setAttribute('role', role)
+
+  return node
+}
+
 /**
- * Draw the ten cards, marking the ones the two sides chose.
+ * The three column headings.
  *
- * The highlight is applied here rather than patched on afterwards, so the cards
+ * Rendered rather than written into `index.html` because the region is emptied
+ * between runs, and a header sitting in the markup would be cleared with the
+ * rows it labels and never come back.
+ */
+function headerRow(doc: Document): HTMLElement {
+  const head = element(doc, 'div', 'candidate-head')
+
+  head.setAttribute('role', 'row')
+  head.append(
+    ...COLUMN_TITLES.map((title) => cell(doc, 'span', 'candidate-column', title, 'columnheader')),
+  )
+
+  return head
+}
+
+/**
+ * One candidate as a row, wearing a class for each judge that chose it.
+ *
+ * The name is the row's header rather than another cell: it is what the other
+ * two columns are about, and it is the string both badges below echo.
+ */
+function candidateRow(doc: Document, candidate: Candidate, highlight: PickHighlight): HTMLElement {
+  const row = element(doc, 'div', 'candidate-row')
+
+  row.setAttribute('role', 'row')
+  row.dataset.name = candidate.name
+
+  if (candidate.name === highlight.llm) {
+    row.classList.add(LLM_PICK_CLASS)
+  }
+
+  if (candidate.name === highlight.jev) {
+    row.classList.add(JEV_PICK_CLASS)
+  }
+
+  row.append(
+    cell(doc, 'code', 'candidate-name', candidate.name, 'rowheader'),
+    cell(doc, 'span', 'candidate-type', candidate.typeHint, 'cell'),
+    cell(doc, 'span', 'candidate-why', candidate.why, 'cell'),
+  )
+
+  return row
+}
+
+/**
+ * Draw the ten candidates as one table, marking the rows the two sides chose.
+ *
+ * A table rather than ten boxes because the candidates differ by a word and a
+ * type, and the question a visitor has is which of them to prefer. Rows put the
+ * names under one another so that comparison is a glance down a column; the
+ * cards it replaces made it a reading exercise, ten times over.
+ *
+ * The highlight is applied here rather than patched on afterwards, so the rows
  * are rebuilt from the candidates and the current picks every time and can
  * never drift out of step with the badges below them.
  */
 export function renderCandidates(
   refs: UiRefs,
   candidates: readonly Candidate[],
-  highlight: CardHighlight = { llm: '', jev: '' },
+  highlight: PickHighlight = { llm: '', jev: '' },
 ): void {
   const doc = refs.cards.ownerDocument
+  const grid = element(doc, 'div', 'candidate-grid')
 
-  refs.cards.replaceChildren(
-    ...candidates.map((candidate) => {
-      const card = element(doc, 'article', 'card')
-
-      card.dataset.name = candidate.name
-
-      if (candidate.name === highlight.llm) {
-        card.classList.add('card-pick-llm')
-      }
-
-      if (candidate.name === highlight.jev) {
-        card.classList.add('card-pick-jev')
-      }
-
-      card.append(
-        element(doc, 'code', 'card-name', candidate.name),
-        element(doc, 'span', 'card-type', candidate.typeHint),
-        element(doc, 'p', 'card-why', candidate.why),
-      )
-
-      return card
-    }),
+  grid.setAttribute('role', 'table')
+  grid.append(
+    headerRow(doc),
+    ...candidates.map((candidate) => candidateRow(doc, candidate, highlight)),
   )
+  refs.cards.replaceChildren(grid)
 }
 
 /**

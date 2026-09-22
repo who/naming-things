@@ -53,24 +53,35 @@ describe('renderCandidates', () => {
     refs = queryRefs(document)
   })
 
-  it('draws one card per candidate, in the order they arrived', () => {
+  it('draws one row per candidate, in the order they arrived', () => {
     renderCandidates(refs, sampleCandidates())
 
-    const cards = [...refs.cards.querySelectorAll('.card')]
+    const rows = [...refs.cards.querySelectorAll('.candidate-row')]
 
-    expect(cards).toHaveLength(SAMPLE_RUN.candidates.length)
-    expect(cards.map((card) => card.querySelector('.card-name')?.textContent)).toEqual(
+    expect(rows).toHaveLength(SAMPLE_RUN.candidates.length)
+    expect(rows.map((row) => row.querySelector('.candidate-name')?.textContent)).toEqual(
       SAMPLE_RUN.candidates.map((candidate) => candidate.name),
     )
+  })
+
+  it('heads the table with the three column labels', () => {
+    renderCandidates(refs, sampleCandidates())
+
+    const headings = [...refs.cards.querySelectorAll('.candidate-head .candidate-column')]
+
+    expect(refs.cards.querySelector('.candidate-grid')?.getAttribute('role')).toBe('table')
+    expect(headings.map((heading) => heading.textContent)).toEqual(['Name', 'Type', 'Why'])
   })
 
   it('shows the type hint and the case for each name', () => {
     renderCandidates(refs, sampleCandidates())
 
-    const first = refs.cards.querySelector('.card')
+    const first = refs.cards.querySelector('.candidate-row')
 
-    expect(first?.querySelector('.card-type')?.textContent).toBe(SAMPLE_RUN.candidates[0]?.typeHint)
-    expect(first?.querySelector('.card-why')?.textContent).toBe(SAMPLE_RUN.candidates[0]?.why)
+    expect(first?.querySelector('.candidate-type')?.textContent).toBe(
+      SAMPLE_RUN.candidates[0]?.typeHint,
+    )
+    expect(first?.querySelector('.candidate-why')?.textContent).toBe(SAMPLE_RUN.candidates[0]?.why)
   })
 
   it('renders markup in model output as literal text', () => {
@@ -83,36 +94,49 @@ describe('renderCandidates', () => {
     expect(refs.cards.querySelector('img')).toBeNull()
     expect(refs.cards.querySelector('script')).toBeNull()
     expect(refs.cards.querySelector('b')).toBeNull()
-    expect(refs.cards.querySelector('.card-name')?.textContent).toBe(hostile)
-    expect(refs.cards.querySelector('.card-why')?.textContent).toContain('&')
+    expect(refs.cards.querySelector('.candidate-name')?.textContent).toBe(hostile)
+    expect(refs.cards.querySelector('.candidate-why')?.textContent).toContain('&')
   })
 
-  it('gives each judge its own mark on the card it chose', () => {
+  it('gives each judge its own mark on the row it chose', () => {
     renderCandidates(refs, sampleCandidates(), {
       llm: SAMPLE_RUN.llm.name,
       jev: SAMPLE_RUN.jev.choice,
     })
 
-    const llmCard = refs.cards.querySelector(`[data-name="${SAMPLE_RUN.llm.name}"]`)
-    const jevCard = refs.cards.querySelector(`[data-name="${SAMPLE_RUN.jev.choice}"]`)
+    const llmRow = refs.cards.querySelector(`[data-name="${SAMPLE_RUN.llm.name}"]`)
+    const jevRow = refs.cards.querySelector(`[data-name="${SAMPLE_RUN.jev.choice}"]`)
 
-    expect(llmCard?.classList.contains('card-pick-llm')).toBe(true)
-    expect(llmCard?.classList.contains('card-pick-jev')).toBe(false)
-    expect(jevCard?.classList.contains('card-pick-jev')).toBe(true)
+    expect(llmRow?.classList.contains('row-pick-llm')).toBe(true)
+    expect(llmRow?.classList.contains('row-pick-jev')).toBe(false)
+    expect(jevRow?.classList.contains('row-pick-jev')).toBe(true)
+  })
+
+  it('puts both marks on one row when the two judges agree', () => {
+    const agreed = SAMPLE_RUN.llm.name
+
+    renderCandidates(refs, sampleCandidates(), { llm: agreed, jev: agreed })
+
+    const marked = [...refs.cards.querySelectorAll('.row-pick-llm')]
+
+    // Both classes on one row is what the stylesheet's offset chase binds to: an
+    // agreement split over two rows would animate as two picks rather than one.
+    expect(marked).toHaveLength(1)
+    expect(marked[0]?.classList.contains('row-pick-jev')).toBe(true)
   })
 
   it('highlights nothing while neither judge has answered', () => {
     renderCandidates(refs, sampleCandidates(), { llm: '', jev: '' })
 
-    expect(refs.cards.querySelectorAll('.card-pick-llm')).toHaveLength(0)
-    expect(refs.cards.querySelectorAll('.card-pick-jev')).toHaveLength(0)
+    expect(refs.cards.querySelectorAll('.row-pick-llm')).toHaveLength(0)
+    expect(refs.cards.querySelectorAll('.row-pick-jev')).toHaveLength(0)
   })
 
   it('replaces the previous run rather than appending to it', () => {
     renderCandidates(refs, sampleCandidates())
     renderCandidates(refs, [{ name: 'onlyOne', typeHint: 'number', why: 'The second run.' }])
 
-    expect(refs.cards.querySelectorAll('.card')).toHaveLength(1)
+    expect(refs.cards.querySelectorAll('.candidate-row')).toHaveLength(1)
     expect(refs.cards.textContent).not.toContain(SAMPLE_RUN.llm.name)
   })
 })

@@ -160,7 +160,7 @@ describe('bootstrap', () => {
   })
 
   // Randomize goes through the client, so the swap lands a turn later and the
-  // prose that arrives is the Worker's rather than another card off the bank.
+  // prose that arrives is the Worker's rather than another brief off the bank.
   it('swaps the descriptor for a different one on Randomize', async () => {
     const refs = bootstrap(document)
     const before = refs.descriptor.value
@@ -204,7 +204,7 @@ describe('bootstrap', () => {
     expect(refs.reaskJev.disabled).toBe(true)
   })
 
-  it('fills the cards, both badges and the verdict from one click of Run', async () => {
+  it('fills the table, both badges and the verdict from one click of Run', async () => {
     const refs = bootstrap(document)
 
     refs.run.click()
@@ -218,7 +218,7 @@ describe('bootstrap', () => {
       { timeout: 5000 },
     )
 
-    expect(refs.cards.querySelectorAll('.card')).toHaveLength(SAMPLE_RUN.candidates.length)
+    expect(refs.cards.querySelectorAll('.candidate-row')).toHaveLength(SAMPLE_RUN.candidates.length)
     expect(refs.llmPick.querySelector('.pick-name')?.textContent).toBe(SAMPLE_RUN.llm.name)
     expect(refs.jevPick.querySelector('.pick-name')?.textContent).toBe(SAMPLE_RUN.jev.choice)
     expect(refs.run.disabled).toBe(false)
@@ -241,6 +241,6 @@ describe('bootstrap', () => {
       { timeout: 5000 },
     )
 
-    expect(refs.cards.querySelectorAll('.card')).toHaveLength(SAMPLE_RUN.candidates.length)
+    expect(refs.cards.querySelectorAll('.candidate-row')).toHaveLength(SAMPLE_RUN.candidates.length)
   })
 })
