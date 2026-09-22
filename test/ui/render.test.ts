@@ -154,6 +154,44 @@ describe('renderCandidates', () => {
     expect(marked[0]?.classList.contains('row-pick-jev')).toBe(true)
   })
 
+  it('ticks the row each judge chose, and names that judge on the tick', () => {
+    renderCandidates(refs, sampleCandidates(), {
+      llm: SAMPLE_RUN.llm.name,
+      jev: SAMPLE_RUN.jev.choice,
+    })
+
+    const llmRow = refs.cards.querySelector(`[data-name="${SAMPLE_RUN.llm.name}"]`)
+    const jevRow = refs.cards.querySelector(`[data-name="${SAMPLE_RUN.jev.choice}"]`)
+
+    // The label, not just the colour: orange and blue are the whole difference
+    // between the two marks, and that is a difference not every reader has.
+    expect(llmRow?.querySelector('.pick-check-llm')?.getAttribute('aria-label')).toContain(
+      'Plain model',
+    )
+    expect(llmRow?.querySelector('.pick-check-jev')).toBeNull()
+    expect(jevRow?.querySelector('.pick-check-jev')?.getAttribute('aria-label')).toContain('Jev')
+  })
+
+  it('puts both ticks on the row the two judges agreed on', () => {
+    const agreed = SAMPLE_RUN.llm.name
+
+    renderCandidates(refs, sampleCandidates(), { llm: agreed, jev: agreed })
+
+    const row = refs.cards.querySelector(`[data-name="${agreed}"]`)
+
+    // Two marks, and a name cell that still reads as the bare name: the ticks
+    // are drawn out in the gutter, and one that put a character in the cell
+    // would put it in the column a visitor compares the ten names down.
+    expect(row?.querySelectorAll('.pick-check')).toHaveLength(2)
+    expect(row?.querySelector('.candidate-name')?.textContent).toBe(agreed)
+  })
+
+  it('leaves the rows nobody chose unticked', () => {
+    renderCandidates(refs, sampleCandidates(), { llm: SAMPLE_RUN.llm.name, jev: '' })
+
+    expect(refs.cards.querySelectorAll('.pick-check')).toHaveLength(1)
+  })
+
   it('highlights nothing while neither judge has answered', () => {
     renderCandidates(refs, sampleCandidates(), { llm: '', jev: '' })
 

@@ -609,6 +609,9 @@ button.accent-jev:focus-visible {
 
 .cards {
   grid-area: cards;
+  /* One judge's tick, across. The gutter below is sized from it, so widening a
+     tick widens the room it is drawn in rather than pushing it under a row. */
+  --pick-check-size: 1.05rem;
   /* The region keeps its shape while empty and scrolls once the ten rows are in
      it, so a long brief never pushes the verdict off the fold. */
   min-height: 16rem;
@@ -616,6 +619,13 @@ button.accent-jev:focus-visible {
   /* Room for the two pixels a pick's orb sits outside its row, which the
      scroller would otherwise clip off the first row and the last. */
   padding: 2px;
+  /* The gutter the ticks are drawn in: one and a half of them, which is the
+     width an agreement's overlapping pair takes, and a little air besides.
+     Padding rather than a column, and held whether or not a judge has
+     answered, so the answer that lands costs the table no width and moves
+     nothing under it. A scroller clips at its padding edge, not at its
+     content, which is what lets a mark sit out here and still be seen. */
+  padding-left: calc(var(--pick-check-size) * 1.5 + 0.75rem);
 }
 
 .verdict {
@@ -740,6 +750,74 @@ button.accent-jev:focus-visible {
 .candidate-row.row-pick-llm.row-pick-jev {
   border-color: var(--accent-llm);
   box-shadow: inset 0 0 0 1px var(--accent-jev);
+}
+
+/* The tick a judge leaves beside the row it chose, out in the region's left
+   gutter. Left rather than right because the region scrolls once the ten rows
+   are in it, and the scrollbar comes down the right over anything drawn there.
+
+   The border already says a row was picked and the orb says it again in
+   motion; neither says it in a shape a visitor recognises at a glance, and the
+   orb says nothing at all to someone who asked their machine for less motion.
+   A tick is the one mark that means chosen without being read. */
+.pick-check {
+  align-items: center;
+  /* Opaque, and ringed in the page's own colour: where the pair overlap, the
+     one in front has to end somewhere the eye can find, or two judges on one
+     name read as a single smudged badge. */
+  background: var(--bg);
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--bg);
+  display: flex;
+  height: var(--pick-check-size);
+  justify-content: center;
+  /* Just clear of the row's edge, inside the gutter reserved above. Absolute,
+     so a tick landing on a row costs that row no height and the nine under it
+     no position. */
+  left: calc((var(--pick-check-size) + 0.45rem) * -1);
+  position: absolute;
+  /* Centred on the row rather than on its first line, so a row whose case for
+     the name wrapped to a second line keeps its tick beside the middle. */
+  top: calc(50% - var(--pick-check-size) / 2);
+  width: var(--pick-check-size);
+}
+
+.pick-check svg {
+  height: 62%;
+  width: 62%;
+}
+
+/* A stroked path rather than a filled one, so the tick stays the same weight
+   as the ring around it at every size the circle is asked to be. */
+.pick-check path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+/* The legend's two accents, taken once each: the ring and the tick inside it
+   are both drawn in the current colour, so a judge is one declaration. */
+.pick-check-llm {
+  color: var(--accent-llm);
+}
+
+.pick-check-jev {
+  color: var(--accent-jev);
+}
+
+/* Agreement: two ticks, overlapping by half of one. Side by side they would
+   want a gutter twice as wide for the one case where both judges answered the
+   same, and the table would pay that width for every run. Stacked exactly they
+   would be one tick in whichever colour painted last, which loses the only
+   thing the row has to say. Half of one is the stacked-badge shape, and it
+   keeps both accents on screen. Orange is the one that moves: it is written
+   first and so is painted under blue, and the mark behind is the mark that has
+   somewhere to go. */
+.candidate-row.row-pick-llm.row-pick-jev .pick-check-llm {
+  transform: translateX(calc(var(--pick-check-size) * -0.5));
 }
 
 .pick-title {
@@ -1152,6 +1230,13 @@ button.accent-action.is-inviting:not(:disabled) {
      pair of columns on a phone too. */
   .candidate-grid {
     --candidate-columns: minmax(0, 1fr) minmax(4.5rem, 0.5fr);
+  }
+
+  /* A smaller tick on a phone, and with it a narrower gutter: the rows are
+     down to two columns here, and a mark sized for a desktop would take its
+     room out of the names. */
+  .cards {
+    --pick-check-size: 0.9rem;
   }
 
   .candidate-column:last-child,

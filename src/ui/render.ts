@@ -87,6 +87,24 @@ const PICK_PHASE_PROP = '--pick-phase'
 const PICK_PHASE_STRIDE = 3
 const PICK_PHASE_STEPS = 10
 
+/**
+ * The classes a judge's tick wears: one both of them share, one per judge.
+ *
+ * The row's own two pseudo-elements are already spent on the orbs, so a tick
+ * has to be a real element. It earns that anyway: an answer has to be legible
+ * while the page is standing still, and an arc is only a statement while it
+ * is moving.
+ */
+const CHECK_CLASS = 'pick-check'
+const LLM_CHECK_CLASS = 'pick-check-llm'
+const JEV_CHECK_CLASS = 'pick-check-jev'
+
+/** SVG elements exist only in this namespace; `createElement` builds HTML ones. */
+const SVG_NS = 'http://www.w3.org/2000/svg'
+
+/** The tick, in the sixteen units of the box the stylesheet scales to a circle. */
+const CHECK_PATH = 'M4.3 8.5 6.9 11.1 11.7 5.3'
+
 /** The columns, in the order a row lays them out. */
 const COLUMN_TITLES: readonly string[] = ['Name', 'Type', 'Why']
 
@@ -170,6 +188,39 @@ function pickPhase(index: number): string {
 }
 
 /**
+ * One circle tick, carrying the name of the judge it speaks for.
+ *
+ * Drawn rather than typed. `✓` is whatever the reader's font decided a tick
+ * was, at whatever width it decided to give it, and these two sit half over one
+ * another: a glyph with side bearings of its own would put that overlap
+ * somewhere different on every machine it is read on.
+ *
+ * The label is on the circle and the path is hidden beneath it, so the pair
+ * reads as two named marks rather than as two unexplained graphics. Colour
+ * alone cannot carry which judge this is — the two accents are the only thing
+ * telling them apart, and a reader who cannot see the difference between
+ * orange and blue is exactly the reader the label is for.
+ */
+function pickCheck(doc: Document, className: string, label: string): HTMLElement {
+  const mark = element(doc, 'span', `${CHECK_CLASS} ${className}`)
+  const canvas = doc.createElementNS(SVG_NS, 'svg')
+  const tick = doc.createElementNS(SVG_NS, 'path')
+
+  mark.setAttribute('role', 'img')
+  mark.setAttribute('aria-label', label)
+  mark.title = label
+
+  canvas.setAttribute('viewBox', '0 0 16 16')
+  canvas.setAttribute('aria-hidden', 'true')
+  canvas.setAttribute('focusable', 'false')
+  tick.setAttribute('d', CHECK_PATH)
+  canvas.append(tick)
+  mark.append(canvas)
+
+  return mark
+}
+
+/**
  * One candidate as a row, wearing a class for each judge that chose it.
  *
  * The name is the row's header rather than another cell: it is what the other
@@ -203,8 +254,24 @@ function candidateRow(
     row.style.setProperty(PICK_PHASE_PROP, pickPhase(index))
   }
 
+  const name = cell(doc, 'code', 'candidate-name', candidate.name, 'rowheader')
+
+  // The ticks go inside the cell the name lives in rather than loose in the
+  // row: a row's children are its cells, and a mark parked between them would
+  // be a fourth column that is empty nine times out of ten. Where they are
+  // written is not where they are drawn — the stylesheet puts them out in the
+  // gutter — and neither of them adds a character, so the column a visitor
+  // compares names down still holds nothing but names.
+  if (llmPicked) {
+    name.append(pickCheck(doc, LLM_CHECK_CLASS, `${LLM_TITLE} chose this name`))
+  }
+
+  if (jevPicked) {
+    name.append(pickCheck(doc, JEV_CHECK_CLASS, `${JEV_NAME} chose this name`))
+  }
+
   row.append(
-    cell(doc, 'code', 'candidate-name', candidate.name, 'rowheader'),
+    name,
     cell(doc, 'span', 'candidate-type', candidate.typeHint, 'cell'),
     cell(doc, 'span', 'candidate-why', candidate.why, 'cell'),
   )
