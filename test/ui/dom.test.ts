@@ -214,7 +214,7 @@ describe('bootstrap', () => {
     await vi.waitFor(
       () => {
         expect(refs.verdict.querySelector('.verdict-banner')?.textContent).toBe(
-          'Plain model disagrees with Jev Choice',
+          'Claude Haiku disagrees with Jev',
         )
       },
       { timeout: 5000 },

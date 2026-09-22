@@ -331,20 +331,40 @@ describe('renderVerdict', () => {
     refs = queryRefs(document)
   })
 
-  it('names both sides and the split for the sample fixture', () => {
+  it('names both judges and the split for the sample fixture', () => {
     renderVerdict(refs, sampleResult())
 
-    expect(textOf(refs, '.verdict-banner')).toBe('Plain model disagrees with Jev Choice')
+    expect(textOf(refs, '.verdict-banner')).toBe('Claude Haiku disagrees with Jev')
     expect(refs.verdict.querySelector('.verdict-banner')?.classList.contains('is-disagree')).toBe(
       true,
     )
   })
 
-  it('names both sides and the match when they landed on one name', () => {
+  it('names both judges and the match when they landed on one name', () => {
     renderVerdict(refs, { ...sampleResult(), agree: true })
 
-    expect(textOf(refs, '.verdict-banner')).toBe('Plain model agrees with Jev Choice')
+    expect(textOf(refs, '.verdict-banner')).toBe('Claude Haiku agrees with Jev')
     expect(refs.verdict.querySelector('.verdict-banner')?.classList.contains('is-agree')).toBe(true)
+  })
+
+  it('drops the version off an unfamiliar id rather than the name in front of it', () => {
+    const result = sampleResult()
+
+    renderVerdict(refs, { ...result, llm: { ...result.llm, model: 'sonnet-test-9-0-20260101' } })
+
+    expect(textOf(refs, '.verdict-banner')).toBe('Sonnet Test disagrees with Jev')
+  })
+
+  it('falls back to the badge headings when neither side reported a model', () => {
+    const result = sampleResult()
+
+    renderVerdict(refs, {
+      ...result,
+      llm: { ...result.llm, model: '' },
+      jev: { ...result.jev, model: '' },
+    })
+
+    expect(textOf(refs, '.verdict-banner')).toBe('Plain model disagrees with Jev')
   })
 
   it('keeps the two badges and adds one banner, however many runs land', () => {

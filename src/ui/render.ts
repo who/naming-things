@@ -21,6 +21,14 @@ import type { UiRefs } from './dom'
 const LLM_TITLE = 'Plain model'
 const JEV_TITLE = 'Jev Choice'
 
+/**
+ * What the verdict calls Jev when Jev never said what it was.
+ *
+ * Shorter than the heading above the badge on purpose: `Jev Choice` names a
+ * pane, and a pane is not the sort of thing that can agree with anybody.
+ */
+const JEV_NAME = 'Jev'
+
 /** Shown for a confidence the envelope omitted. A missing number is not zero. */
 const NO_CONFIDENCE = '—'
 
@@ -366,15 +374,45 @@ function verdictBanner(refs: UiRefs): HTMLElement {
   return banner
 }
 
+/** One word as a sentence opens one, whatever case the id spelled it in. */
+function titleCase(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+}
+
+/**
+ * The judge a sentence can name, read off the id that judge reported:
+ * `claude-haiku-4-5-20251001` becomes `Claude Haiku` and `jev-1.13.0` becomes
+ * `Jev`.
+ *
+ * A provider id is a name with a version welded onto the end of it, and the
+ * version is the half no headline wants — nobody reads a release date to find
+ * out who disagreed with whom. So the words are kept up to the first one
+ * beginning with a digit, which is where each of these ids stops naming a
+ * model and starts dating it. An id that opens with a digit has no such prefix
+ * to keep, and all of it is used rather than thrown away for a generic word:
+ * an unfamiliar id spelled out is still a judge, and the fallback is not.
+ *
+ * That fallback is for the side that failed, which reports no model at all,
+ * because a banner cannot name a judge that never answered.
+ */
+function judgeName(model: string, fallback: string): string {
+  const words = model.split(/[^A-Za-z0-9]+/).filter((word) => word !== '')
+  const version = words.findIndex((word) => /^\d/.test(word))
+  const named = version > 0 ? words.slice(0, version) : words
+
+  return named.length === 0 ? fallback : named.map(titleCase).join(' ')
+}
+
 /**
  * Announce whether the two sides landed on the same name, and flash it.
  *
  * Written as a sentence naming both sides, rather than as the bare AGREE it
  * used to read, which said that something matched without saying what: the
  * strip spans two badges, and a lone verb left the reader to work out which of
- * them was being reported on. The two names are the same constants the badges
- * are headed with, so the sentence cannot come to disagree with the headings
- * directly above it.
+ * them was being reported on. The names are the judges that answered this run
+ * rather than the headings over their badges, because `Plain model` is a label
+ * for a slot and the thing that disagreed with Jev was Claude Haiku. A visitor
+ * comparing two models is owed the two models by name.
  *
  * The flash class is taken off and put back across a forced reflow because a
  * second run reaching the same verdict would otherwise re-add a class the
@@ -383,8 +421,10 @@ function verdictBanner(refs: UiRefs): HTMLElement {
 export function renderVerdict(refs: UiRefs, result: RunResult): void {
   const banner = verdictBanner(refs)
   const verb = result.agree ? 'agrees with' : 'disagrees with'
+  const llm = judgeName(result.llm.model, LLM_TITLE)
+  const jev = judgeName(result.jev.model, JEV_NAME)
 
-  banner.textContent = `${LLM_TITLE} ${verb} ${JEV_TITLE}`
+  banner.textContent = `${llm} ${verb} ${jev}`
   banner.classList.toggle('is-agree', result.agree)
   banner.classList.toggle('is-disagree', !result.agree)
 
