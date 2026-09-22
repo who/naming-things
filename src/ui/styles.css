@@ -63,10 +63,44 @@ body {
   padding: 1.25rem 1.5rem;
 }
 
+/* The title and the credit on one line, at either end of it. The credit rides
+   in the header rather than floating in the corner of the viewport, so it
+   scrolls away with the title instead of sitting over the run controls on a
+   phone. When the row runs out of room the link wraps under the title, and the
+   auto margin on it keeps it against the right edge — the corner it was read in
+   before the wrap. */
+.masthead-top {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  justify-content: space-between;
+}
+
 .masthead h1 {
   font-size: 1.5rem;
   letter-spacing: -0.01em;
   margin: 0;
+}
+
+/* Small and dim: whose page this is matters least of everything in the
+   masthead, and a byline at the title's weight would read as a second heading.
+   The grey is the tagline's own, which clears 7:1 on this background, so quiet
+   here does not mean hard to read. Pointer and keyboard get the same answer —
+   full ink and an underline — because the underline is the only part of that
+   pair a reader who cannot separate the two greys will notice. */
+.byline {
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+  margin-left: auto;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.byline:hover,
+.byline:focus-visible {
+  color: var(--ink);
+  text-decoration: underline;
 }
 
 /* Held to no measure of its own: one sentence naming what the page is, sitting
