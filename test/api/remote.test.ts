@@ -162,6 +162,30 @@ describe('RemoteApiClient, through the Worker', () => {
     expect(draft.candidates).toHaveLength(10)
   })
 
+  it('rewrites the ten the Worker sent into the casing this page asked for', async () => {
+    useTransport(answers({ descriptor: DESCRIPTOR, code: CODE, candidates: CANDIDATES }))
+
+    // A Worker one deploy behind answers in whatever casing the model used, so
+    // the page applies the rule again rather than trusting the answer to it.
+    const draft = await worker().generateCandidates({
+      descriptor: DESCRIPTOR,
+      val: { ...DEFAULT_VAL(), naming: 'PascalCase' },
+    })
+
+    expect(draft.candidates.map(({ name }) => name)).toEqual([
+      'Weight',
+      'WeightGrams',
+      'MassGrams',
+      'ParcelWeight',
+      'Grams',
+      'ParcelWeightGrams',
+      'WeightInGrams',
+      'NetWeightGrams',
+      'WeightG',
+      'DepotWeight',
+    ])
+  })
+
   it('reads a pick, and refuses a name that was never offered', async () => {
     useTransport(
       answers({ name: 'weightGrams', reason: 'Carries its unit.', model: 'claude-haiku-4-5-20251001' }),
@@ -381,6 +405,41 @@ describe('RemoteApiClient, with the visitor’s own keys', () => {
     expect(bodyOf(call).tool_choice).toEqual({ type: 'tool', name: 'propose_properties' })
     expect(draft.descriptor).toBe(DESCRIPTOR)
     expect(draft.candidates).toHaveLength(10)
+  })
+
+  it('asks for the casing as a requirement, and holds the answer to it', async () => {
+    useTransport(
+      answers({
+        content: [
+          {
+            type: 'tool_use',
+            name: 'propose_properties',
+            input: { code: CODE, properties: CANDIDATES },
+          },
+        ],
+      }),
+    )
+
+    const draft = await new RemoteApiClient(KEYS).generateCandidates({
+      descriptor: DESCRIPTOR,
+      val: { ...DEFAULT_VAL(), naming: 'snake_case' },
+    })
+    const prompt = String((bodyOf(firstCall()).messages as { content: string }[])[0]?.content)
+
+    expect(prompt).toContain('Write every one of the 10 names in snake_case')
+    expect(prompt).not.toContain('casing snake_case')
+    expect(draft.candidates.map(({ name }) => name)).toEqual([
+      'weight',
+      'weight_grams',
+      'mass_grams',
+      'parcel_weight',
+      'grams',
+      'parcel_weight_grams',
+      'weight_in_grams',
+      'net_weight_grams',
+      'weight_g',
+      'depot_weight',
+    ])
   })
 
   it('writes a brief through the same forced tool call', async () => {

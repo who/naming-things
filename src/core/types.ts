@@ -16,7 +16,15 @@ export interface Candidate {
 /** A taste preference a visitor can switch on when importing a style. */
 export type PreferTag = 'id-like' | 'domain-nouns' | 'booleans-as-isX'
 
-/** Imported naming taste, carried as context rather than enforced as a gate. */
+/**
+ * Imported naming taste: context for the model, except for the casing.
+ *
+ * `prefer` and `weights` are weighed against everything else in a brief and
+ * may lose to it. `naming` is the one field an answer is held to, because a
+ * chip that leaves the cards reading exactly as they did is a control that
+ * does not work — the ten come back in the casing chosen here whatever the
+ * model wrote.
+ */
 export interface StyleVal {
   naming: 'camelCase' | 'snake_case' | 'PascalCase'
   prefer: PreferTag[]

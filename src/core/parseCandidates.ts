@@ -20,8 +20,15 @@ import type { Candidate } from './types'
  */
 export const CANDIDATE_COUNT = 10
 
-/** A leading letter or underscore, then letters, digits or underscores. */
-const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/
+/**
+ * A leading letter or underscore, then letters, digits or underscores.
+ *
+ * Exported for the same reason the count is: what makes a name usable as a
+ * property key is a fact about the run rather than about this parser, and the
+ * rewrite that puts the ten into the visitor's casing has to hold its output
+ * to the rule the gate here would have applied to it.
+ */
+export const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/
 
 /** A type hint rides in a card header, so it stays short enough to read. */
 const MAX_TYPE_HINT_LENGTH = 24

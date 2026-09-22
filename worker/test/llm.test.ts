@@ -72,8 +72,22 @@ const BRIEF = [
   'created sits in the field beside it, so the name has to keep the two apart.',
 ].join(' ')
 
-/** A style import, to prove `val` reaches the prompt as advice. */
+/** A style import: the casing reaches the prompt as a rule, the rest as advice. */
 const VAL = { naming: 'snake_case', prefer: ['id-like'], weights: { shortNames: 0.25 } }
+
+/** The ten above, in the casing a PascalCase run is entitled to read them in. */
+const PASCAL_NAMES = [
+  'LastRunAt',
+  'RunCount',
+  'QueryText',
+  'IsPinned',
+  'OwnerId',
+  'WorkspaceId',
+  'CreatedAt',
+  'ScheduleId',
+  'ResultCount',
+  'IsArchived',
+]
 
 /** The Worker never touches `ctx`, so the stub only has to exist. */
 const CTX = { waitUntil: () => {}, passThroughOnException: () => {} }
@@ -174,6 +188,46 @@ describe('generateCandidates', () => {
     expect(prompt).toContain('id-like')
     expect(prompt).toContain('shortNames 0.25')
     expect(prompt).toContain('advice and not a rule')
+  })
+
+  it('states the chosen casing as a requirement rather than as one more preference', async () => {
+    const stub = stubFetch(() =>
+      toolResponse('propose_properties', { code: CODE, properties: CANDIDATES }),
+    )
+
+    await generateCandidates(candidatesBody({ val: { naming: 'PascalCase' } }), ENV)
+
+    const prompt = String(sentPayload(stub).messages[0].content)
+
+    expect(prompt).toContain('Write every one of the 10 names in PascalCase')
+    expect(prompt).not.toContain('casing PascalCase')
+  })
+
+  it('answers in the casing the run asked for, whatever the model wrote', async () => {
+    stubFetch(() => toolResponse('propose_properties', { code: CODE, properties: CANDIDATES }))
+
+    const response = await generateCandidates(
+      candidatesBody({ val: { naming: 'PascalCase' } }),
+      ENV,
+    )
+    const body = (await response.json()) as { candidates: { name: string }[] }
+
+    expect(response.status).toBe(200)
+    expect(body.candidates.map(({ name }) => name)).toEqual(PASCAL_NAMES)
+  })
+
+  it('leaves a casing this build never heard of as advice, and the ten alone', async () => {
+    const stub = stubFetch(() =>
+      toolResponse('propose_properties', { code: CODE, properties: CANDIDATES }),
+    )
+
+    const response = await generateCandidates(
+      candidatesBody({ val: { naming: 'kebab-case' } }),
+      ENV,
+    )
+
+    expect(String(sentPayload(stub).messages[0].content)).toContain('casing kebab-case')
+    await expect(response.json()).resolves.toMatchObject({ candidates: CANDIDATES })
   })
 
   it('renders a malformed style as no hint at all rather than failing the run', async () => {
@@ -441,9 +495,24 @@ describe('through the router', () => {
       CTX as never,
     )
 
+    const body = (await response.json()) as { candidates: { name: string }[] }
+
     expect(response.status).toBe(200)
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://who.github.io')
-    await expect(response.json()).resolves.toMatchObject({ candidates: CANDIDATES })
+    // The posted style asks for snake_case, so the route answers in it: the
+    // rewrite lives behind the handler, not in front of the router.
+    expect(body.candidates.map(({ name }) => name)).toEqual([
+      'last_run_at',
+      'run_count',
+      'query_text',
+      'is_pinned',
+      'owner_id',
+      'workspace_id',
+      'created_at',
+      'schedule_id',
+      'result_count',
+      'is_archived',
+    ])
   })
 
   it('reaches the pick handler rather than the stub that used to be there', async () => {
