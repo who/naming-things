@@ -55,10 +55,13 @@ body {
   margin: 0;
 }
 
+/* Held to no measure of its own: one sentence naming what the page is, sitting
+   across the same room the run below it gets. A 62ch column here left the line
+   ending well short of the legend under it, which read as a stray narrow
+   paragraph rather than as the page's opening line. */
 .tagline {
   color: var(--ink-dim);
   margin: 0.25rem 0 0;
-  max-width: 62ch;
 }
 
 /*
@@ -71,9 +74,9 @@ body {
  *
  * Both entries run along one line rather than down a column, so the key reads
  * as a single strip under the tagline instead of a second stacked paragraph
- * competing with it. No width cap here on purpose: the tagline is held to 62ch
- * because it is prose to be read, where this row is two short labels that want
- * the room to stay inline. It wraps when the room runs out.
+ * competing with it. No width cap here on purpose, and none on the tagline
+ * above it either: both take the content width the shell gives them, and this
+ * row wraps when the room runs out.
  */
 .legend {
   align-items: center;
