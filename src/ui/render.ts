@@ -27,7 +27,14 @@ const NO_CONFIDENCE = '—'
 /** The count-up a side wears while it is still being waited on. */
 const ELAPSED_CLASS = 'pick-elapsed'
 
-/** The duration that outlives the wait, worn by the heading instead of the body. */
+/**
+ * The duration that outlives the wait, worn by the heading instead of the body.
+ *
+ * The stylesheet fills this one in the colour of the badge it lands in, so the
+ * class is written bare here: which judge a duration belongs to is already said
+ * by the pane it is inside, and a second spelling of that in the renderer would
+ * be one more place for the two accents to disagree.
+ */
 const DURATION_CLASS = 'pick-title-elapsed'
 
 /** Worn for the length of one verdict animation, then taken off again. */
@@ -431,7 +438,9 @@ export function renderPickDuration(refs: UiRefs, stage: PickStage, elapsed: stri
 
   // A re-ask replaces the previous duration rather than lining up beside it.
   title.querySelector(`.${DURATION_CLASS}`)?.remove()
-  title.append(element(title.ownerDocument, 'span', DURATION_CLASS, ` · ${elapsed}`))
+  // The number travels alone: it is drawn as a filled chiclet, and a separator
+  // in front of it would read as punctuation that had wandered outside the pill.
+  title.append(element(title.ownerDocument, 'span', DURATION_CLASS, elapsed))
 }
 
 /**

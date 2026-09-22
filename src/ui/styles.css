@@ -690,12 +690,44 @@ button.accent-activity:focus-visible {
   text-transform: none;
 }
 
-/* How long that side took, beside the heading it belongs to. Tabular figures,
+/* How long that side took, beside the heading it belongs to. The heading is the
+   quietest line in the badge, and a duration set to match it was a measurement
+   a visitor had to go looking for; worn as a filled chiclet it is read at a
+   glance, from the same distance as the name underneath it. Tabular figures,
    because the two badges sit side by side and durations that shifted their
    digits around would be harder to compare than to read. */
 .pick-title-elapsed {
+  border-radius: 999px;
+  /* Black, not the page's ink. Both accents are light colours, so the readable
+     text on either of them is the dark one — and the fill is what carries the
+     judge, leaving the label free to be the highest-contrast thing on it. */
+  color: #000;
+  display: inline-block;
+  /* Half again the heading it sits in, which is the smallest step that reads as
+     a number rather than as more of the label. */
+  font-size: 1.05rem;
   font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  /* The heading tracks its caps apart; a number spaced the same way would read
+     as spelled out rather than measured. */
+  letter-spacing: 0;
+  line-height: 1.2;
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.5rem;
   text-transform: none;
+  /* One chiclet stays one chiclet: a narrow badge wraps the heading above it
+     rather than breaking a duration across two lines. */
+  white-space: nowrap;
+}
+
+/* The fill comes from the badge the chiclet landed in, so a duration names its
+   judge in the same colour that badge is already outlined in. */
+.pick-llm .pick-title-elapsed {
+  background: var(--accent-llm);
+}
+
+.pick-jev .pick-title-elapsed {
+  background: var(--accent-jev);
 }
 
 /* The count-up, for as long as the answer has not arrived. Same tabular figures
