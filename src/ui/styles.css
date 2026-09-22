@@ -86,24 +86,49 @@ body {
  * a legend that carries its meaning only in the swatch says nothing to anyone
  * reading it in grayscale or through a screen reader.
  *
- * Both entries run along one line rather than down a column, so the key reads
- * as a single strip under the tagline instead of a second stacked paragraph
- * competing with it. No width cap here on purpose, and none on the tagline
- * above it either: both take the content width the shell gives them, and this
- * row wraps when the room runs out.
+ * A colour and the judge that spends it, and nothing else. The sentences this
+ * strip used to carry explained a run to someone who had not seen one yet,
+ * which is the moment nobody is reading: the badges further down say what each
+ * judge did, standing next to the answer it did it to. What is left is short
+ * enough to sit on one line beside the word naming the line, and to wrap onto a
+ * second on a phone rather than run off the side.
  */
 .legend {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+  margin: 0.6rem 0 0;
+}
+
+/* The word for what the strip is, set as chrome rather than as a third key: it
+   names the row, and a reader who has taken the two colours has no reason to
+   keep coming back to it. */
+.legend-title {
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The keys themselves, along one line rather than down a column, so they read
+   as a single strip under the tagline instead of a stacked paragraph competing
+   with it. No width cap here on purpose, and none on the tagline above it
+   either: both take the content width the shell gives them, and this row wraps
+   when the room runs out. */
+.legend-keys {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem 1.4rem;
+  gap: 0.3rem 1.4rem;
   list-style: none;
-  margin: 0.6rem 0 0;
+  margin: 0;
   padding: 0;
 }
 
-/* Badge and sentence stay together as one unit and wrap to two lines when the
-   row cannot hold both, so a phone puts a note under its own badge rather than
+/* Swatch and name stay together as one unit and wrap to two lines when the row
+   cannot hold both, so a phone puts a name under its own swatch rather than
    splitting the pair across entries. */
 .legend-item {
   align-items: center;
@@ -135,8 +160,11 @@ body {
   background: var(--accent-jev);
 }
 
+/* A judge's name now rather than a sentence about one, so it takes the page's
+   own ink: the dim grey a note wants reads as an aside, and this half of the
+   key is where the meaning of the colour beside it actually sits. */
 .legend-note {
-  color: var(--ink-dim);
+  color: var(--ink);
   font-size: 0.85rem;
 }
 

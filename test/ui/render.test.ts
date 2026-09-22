@@ -207,6 +207,18 @@ describe('renderLlmPick', () => {
 
     expect(refs.llmPick.querySelector('.pick-title')?.textContent).toBe('Plain model')
   })
+
+  it("names the legend's orange key for the judge that answered", () => {
+    renderLlmPick(refs, { ...SAMPLE_RUN.llm })
+
+    expect(refs.legendModel.textContent).toBe('Claude Haiku')
+  })
+
+  it('leaves the legend key at the placeholder the markup ships when nothing answered', () => {
+    renderLlmPick(refs, { name: '', reason: 'upstream refused the request', model: '' })
+
+    expect(refs.legendModel.textContent).toBe('Plain model')
+  })
 })
 
 describe('renderJevPick', () => {

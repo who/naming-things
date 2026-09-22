@@ -34,6 +34,7 @@ const CONTRACT_IDS: Record<keyof UiRefs, string> = {
   stateModal: 'state-modal',
   stateClose: 'state-close',
   stateViewer: 'state-viewer',
+  legendModel: 'legend-model',
   banner: 'banner',
   error: 'error',
 }

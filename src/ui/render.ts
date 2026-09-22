@@ -266,6 +266,13 @@ function llmTitle(doc: Document, model: string): HTMLHeadingElement {
  * The pipeline reports a failed pick as an empty name carrying the error in
  * `reason`, so that shape is rendered as the failure it is rather than as a
  * nameless answer.
+ *
+ * The legend's orange key is written here too, from the id this pick reported.
+ * The markup ships a placeholder rather than a model name because a second copy
+ * of the pin in the page would be free to drift from the one a run answers
+ * with, and a legend naming a judge nothing on the page consulted is worse than
+ * one that waits to be told. A failed pick leaves the key as it found it: the
+ * model behind orange has not changed just because this run could not reach it.
  */
 export function renderLlmPick(refs: UiRefs, pick: LlmPick): void {
   if (pick.name === '') {
@@ -276,6 +283,7 @@ export function renderLlmPick(refs: UiRefs, pick: LlmPick): void {
 
   const doc = refs.llmPick.ownerDocument
 
+  refs.legendModel.textContent = judgeName(pick.model, LLM_TITLE)
   refs.llmPick.classList.remove('pick-failed')
   refs.llmPick.replaceChildren(
     llmTitle(doc, pick.model),

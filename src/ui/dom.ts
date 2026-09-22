@@ -22,6 +22,7 @@ export interface UiRefs {
   stateModal: HTMLElement
   stateClose: HTMLButtonElement
   stateViewer: HTMLElement
+  legendModel: HTMLElement
   banner: HTMLElement
   error: HTMLElement
 }
@@ -59,6 +60,10 @@ export function queryRefs(doc: Document = document): UiRefs {
     stateModal: requireElement(doc, 'state-modal'),
     stateClose: requireElement<HTMLButtonElement>(doc, 'state-close'),
     stateViewer: requireElement(doc, 'state-viewer'),
+    // The half of the legend that names a judge rather than a colour. It is a
+    // ref like any other because a run rewrites it, and the markup ships the
+    // placeholder it carries until one does.
+    legendModel: requireElement(doc, 'legend-model'),
     banner: requireElement(doc, 'banner'),
     error: requireElement(doc, 'error'),
   }
