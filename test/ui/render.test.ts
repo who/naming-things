@@ -302,19 +302,19 @@ describe('renderVerdict', () => {
     refs = queryRefs(document)
   })
 
-  it('reads DISAGREE for the sample fixture', () => {
+  it('names both sides and the split for the sample fixture', () => {
     renderVerdict(refs, sampleResult())
 
-    expect(textOf(refs, '.verdict-banner')).toBe('DISAGREE')
+    expect(textOf(refs, '.verdict-banner')).toBe('Plain model disagrees with Jev Choice')
     expect(refs.verdict.querySelector('.verdict-banner')?.classList.contains('is-disagree')).toBe(
       true,
     )
   })
 
-  it('reads AGREE when both sides landed on one name', () => {
+  it('names both sides and the match when they landed on one name', () => {
     renderVerdict(refs, { ...sampleResult(), agree: true })
 
-    expect(textOf(refs, '.verdict-banner')).toBe('AGREE')
+    expect(textOf(refs, '.verdict-banner')).toBe('Plain model agrees with Jev Choice')
     expect(refs.verdict.querySelector('.verdict-banner')?.classList.contains('is-agree')).toBe(true)
   })
 

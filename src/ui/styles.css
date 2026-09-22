@@ -30,6 +30,9 @@
      answered as quietly as a pointer over Run. */
   --accent-activity-wash: rgba(163, 113, 247, 0.14);
   --danger: #ff7b72;
+  /* The red at the weight the other washes carry, so a split verdict is tinted
+     as quietly as an agreeing one. */
+  --danger-wash: rgba(255, 123, 114, 0.14);
   --radius: 8px;
   --gap: 1rem;
   font-family:
@@ -798,20 +801,27 @@ button.accent-activity:focus-visible {
   font-size: 0.9rem;
   font-weight: 700;
   grid-column: 1 / -1;
-  letter-spacing: 0.18em;
+  /* Tracking one upper-case word could carry; a sentence cannot. The 0.18em
+     that spaced out AGREE pulls a line of words apart into loose letters. */
+  letter-spacing: 0.02em;
   margin: 0;
   padding: 0.4rem 0.75rem;
   text-align: center;
 }
 
+/* Green for a match and red for a split, rather than the legend's two hues. A
+   banner washed blue whenever the two sides met and orange whenever they did
+   not spent the judges' own colours on something that is neither judge, and
+   read as a third badge taking a side. These two belong to no judge, so the
+   strip reports the outcome instead of appearing to award it. */
 .verdict-banner.is-agree {
-  background: rgba(88, 166, 255, 0.12);
-  color: var(--accent-jev);
+  background: var(--accent-action-wash);
+  color: var(--accent-action);
 }
 
 .verdict-banner.is-disagree {
-  background: rgba(240, 136, 62, 0.12);
-  color: var(--accent-llm);
+  background: var(--danger-wash);
+  color: var(--danger);
 }
 
 /* One shot: the class goes on for the flash and comes off on animationend. */

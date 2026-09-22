@@ -326,14 +326,22 @@ function verdictBanner(refs: UiRefs): HTMLElement {
 /**
  * Announce whether the two sides landed on the same name, and flash it.
  *
+ * Written as a sentence naming both sides, rather than as the bare AGREE it
+ * used to read, which said that something matched without saying what: the
+ * strip spans two badges, and a lone verb left the reader to work out which of
+ * them was being reported on. The two names are the same constants the badges
+ * are headed with, so the sentence cannot come to disagree with the headings
+ * directly above it.
+ *
  * The flash class is taken off and put back across a forced reflow because a
  * second run reaching the same verdict would otherwise re-add a class the
  * element already carries, and the animation would never restart.
  */
 export function renderVerdict(refs: UiRefs, result: RunResult): void {
   const banner = verdictBanner(refs)
+  const verb = result.agree ? 'agrees with' : 'disagrees with'
 
-  banner.textContent = result.agree ? 'AGREE' : 'DISAGREE'
+  banner.textContent = `${LLM_TITLE} ${verb} ${JEV_TITLE}`
   banner.classList.toggle('is-agree', result.agree)
   banner.classList.toggle('is-disagree', !result.agree)
 
