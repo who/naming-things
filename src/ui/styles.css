@@ -968,6 +968,20 @@ button.accent-jev:focus-visible {
   z-index: 2;
 }
 
+/* Run, when Run is the move: the green it already wears, breathed out around
+   the button and back in again. Slower and fainter than the purple wait above
+   it on purpose — that one is reporting a call in flight, this one is offering
+   a click, and an offer that keeps pace with a progress indicator reads as one.
+
+   A shadow rather than a pseudo-element, so the halo costs the row no layout
+   and the button needs no stacking context of its own. The disabled guard is
+   the rule's, not just the caller's: Run is greyed for the length of every run
+   it starts, and a halo left breathing around a button that cannot be pressed
+   would be the page inviting a click it intends to refuse. */
+button.accent-action.is-inviting:not(:disabled) {
+  animation: run-invite 2.4s ease-in-out infinite;
+}
+
 /* ActivityCard's travelling highlight, borrowed for the answer rather than for
    the wait: a whole conic gradient turns behind a picked row, and the row's own
    opaque background covers all of it but the arc clearing the edge, which reads
@@ -1069,6 +1083,23 @@ button.accent-jev:focus-visible {
   }
 }
 
+/* The green of --accent-action, spelled in channels because a keyframe has to
+   vary the alpha and a hex custom property cannot. It travels no further and
+   goes no brighter than the wait pulse at its dimmest, which is the whole of
+   what makes this an invitation rather than an alert. The label never moves:
+   nothing here touches opacity or transform, so the word Run is as legible
+   mid-breath as it is at rest. */
+@keyframes run-invite {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(63, 185, 80, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 0.55rem 0 rgba(63, 185, 80, 0.2);
+  }
+}
+
 @media (max-width: 720px) {
   .stage {
     grid-template-areas:
@@ -1104,8 +1135,16 @@ button.accent-jev:focus-visible {
   .activity-card.is-waiting::before,
   .activity-card.is-waiting::after,
   .candidate-row.row-pick-llm::before,
-  .candidate-row.row-pick-jev::after {
+  .candidate-row.row-pick-jev::after,
+  button.accent-action.is-inviting:not(:disabled) {
     animation: none;
+  }
+
+  /* Held at the breath's fullest, for the same reason the waiting edge is: the
+     halo is the only thing saying Run is the move, and someone who asked for
+     less motion still opened a page with a brief waiting to be named. */
+  button.accent-action.is-inviting:not(:disabled) {
+    box-shadow: 0 0 0.55rem 0 rgba(63, 185, 80, 0.2);
   }
 
   /* Stopped, not removed: the purple edge is still the only thing saying the

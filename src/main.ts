@@ -18,6 +18,7 @@ import {
   renderVerdict,
   setStageLoading,
 } from './ui/render'
+import { setRunInviting } from './ui/runInvite'
 import { clearStatePayload, mountStateModal, renderStatePayload } from './ui/stateViewer'
 import { loadVal, mountValControls } from './ui/valControls'
 
@@ -279,6 +280,10 @@ export function bootstrap(doc: Document = document): UiRefs {
     // seconds to answer. The box about to be rewritten is the thing that is
     // waiting, so the box is what says so.
     setActivityWaiting(refs.descriptorShell, true)
+    // And the offer on Run comes down while the box is empty. There is nothing
+    // to run on until a brief lands, and two things breathing at once would
+    // have the page pointing at the button and the box in the same breath.
+    setRunInviting(refs.run, false)
     // Everything below the box was an answer about the brief on its way out.
     // Ten names for a courier job sitting under a description of something
     // else is the page claiming a run it never did, so the old run goes as soon
@@ -290,6 +295,12 @@ export function bootstrap(doc: Document = document): UiRefs {
       .generateDescriptor(replaced)
       .then((descriptor) => {
         refs.descriptor.value = descriptor
+        // A fresh brief over cleared results: Run is the only move left, and
+        // the offer goes back on the button that makes it. Only here, though —
+        // the failure branch below restores prose the visitor has already seen
+        // under a line explaining what went wrong, and a button breathing over
+        // that line would be competing with the thing worth reading.
+        setRunInviting(refs.run, true)
       })
       .catch((reason: unknown) => {
         // The prose comes back, because it may be the visitor's own and nothing
@@ -312,6 +323,11 @@ export function bootstrap(doc: Document = document): UiRefs {
   })
 
   refs.run.disabled = false
+  // The page opens on a brief from the bank with nothing under it, which is
+  // exactly the state the offer is for: the first thing a visitor can usefully
+  // do here is press Run, and until now the only thing saying so was an
+  // attribute coming off a button.
+  setRunInviting(refs.run, true)
   refs.run.addEventListener('click', () => {
     // The disabled button already turns most double-clicks away; the flag is
     // what guarantees two runs can never interleave and paint over each other.
@@ -321,6 +337,11 @@ export function bootstrap(doc: Document = document): UiRefs {
 
     running = true
     refs.run.disabled = true
+    // The offer was taken, so it stops being made — and it is not made again
+    // when the run ends. Run is pressable over a finished run, but the ten
+    // names and the two badges under it are what the visitor came for, and a
+    // button pulsing beside them would be asking for the click it just had.
+    setRunInviting(refs.run, false)
 
     void executeRun(refs, client, val, timers)
       .then((result) => {
