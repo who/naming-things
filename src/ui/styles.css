@@ -13,17 +13,22 @@
   --accent-llm: #f0883e;
   --accent-jev: #58a6ff;
   /* ActivityCard's purple. Deliberately neither of the two above: a waiting
-     state tinted orange or blue would read as the model or Jev answering. */
+     state tinted orange or blue would read as the model or Jev answering. The
+     Randomize button wears it too, because it is the control that starts that
+     wait and the border it lights is this exact colour. */
   --accent-activity: #a371f7;
-  /* Randomize and Run. Neither legend colour, for the same reason the waiting
-     tint is neither: Run wearing the orange put the page's loudest control in
-     one of the two hues the legend spends to tell the judges apart, so a
-     visitor scanning the row met the key before they met the button. Green
-     belongs to no judge, and clears 7:1 against the panel it is drawn on. */
+  /* Run. Neither legend colour, for the same reason the waiting tint is
+     neither: Run wearing the orange put the page's loudest control in one of
+     the two hues the legend spends to tell the judges apart, so a visitor
+     scanning the row met the key before they met the button. Green belongs to
+     no judge, and clears 7:1 against the panel it is drawn on. */
   --accent-action: #3fb950;
   /* The same green at the weight a hover fill can take without becoming a
      third filled thing on a row that already has two outlined ones. */
   --accent-action-wash: rgba(63, 185, 80, 0.14);
+  /* And the purple at that same weight, so a pointer over Randomize is
+     answered as quietly as a pointer over Run. */
+  --accent-activity-wash: rgba(163, 113, 247, 0.14);
   --danger: #ff7b72;
   --radius: 8px;
   --gap: 1rem;
@@ -256,36 +261,58 @@ button.accent-jev:not(:disabled) {
   color: var(--accent-jev);
 }
 
-/* The two buttons that start a run, in the one accent that is not a judge.
+/* The two buttons on that row, each in an accent that belongs to no judge.
  *
- * The edge is set without the :not(:disabled) guard the two above carry, so a
- * Run that has not been given a descriptor yet keeps its green rather than
- * dropping to bare chrome: the dimmed ink and the shared disabled opacity
- * already say it cannot be pressed, and a button that changes family as well as
- * weight reads as a different control rather than the same one waiting.
+ * Run keeps the green. Randomize takes the waiting purple, because the box it
+ * is about to rewrite lights that same purple while the call is out: the button
+ * and the border it starts are then one colour rather than two, and the row
+ * still spends neither of the legend's hues on its loudest controls.
+ *
+ * The shade each one wears is carried in a local custom property, so the four
+ * rules that follow are written once and a third accented button would be two
+ * lines rather than another copy of them. The edge is set without the
+ * :not(:disabled) guard the two above carry, so a Run that has not been given a
+ * descriptor yet keeps its green rather than dropping to bare chrome: the
+ * dimmed ink and the shared disabled opacity already say it cannot be pressed,
+ * and a button that changes family as well as weight reads as a different
+ * control rather than the same one waiting.
  */
 button.accent-action {
-  border-color: var(--accent-action);
+  --accent-button: var(--accent-action);
+  --accent-button-wash: var(--accent-action-wash);
 }
 
-button.accent-action:not(:disabled) {
-  color: var(--accent-action);
+button.accent-activity {
+  --accent-button: var(--accent-activity);
+  --accent-button-wash: var(--accent-activity-wash);
+}
+
+button.accent-action,
+button.accent-activity {
+  border-color: var(--accent-button);
+}
+
+button.accent-action:not(:disabled),
+button.accent-activity:not(:disabled) {
+  color: var(--accent-button);
 }
 
 /* Hover has to be stated here rather than left to the page-wide rule: that one
    greys the edge, which on these two would answer a pointer by taking the
    colour away. A wash inside the same border says the same thing forwards. */
-button.accent-action:hover:not(:disabled) {
-  background: var(--accent-action-wash);
-  border-color: var(--accent-action);
+button.accent-action:hover:not(:disabled),
+button.accent-activity:hover:not(:disabled) {
+  background: var(--accent-button-wash);
+  border-color: var(--accent-button);
 }
 
-/* And the ring, for the same reason the fill is green: the page-wide focus
+/* And the ring, for the same reason neither fill is blue: the page-wide focus
    outline is the Jev blue, which would put a legend colour back on the one row
    this change is clearing it off. Colour only — the width and offset below are
    the page's and stay shared. */
-button.accent-action:focus-visible {
-  outline-color: var(--accent-action);
+button.accent-action:focus-visible,
+button.accent-activity:focus-visible {
+  outline-color: var(--accent-button);
 }
 
 :focus-visible {
