@@ -23,12 +23,9 @@
      scanning the row met the key before they met the button. Green belongs to
      no judge, and clears 7:1 against the panel it is drawn on. */
   --accent-action: #3fb950;
-  /* The same green at the weight a hover fill can take without becoming a
-     third filled thing on a row that already has two outlined ones. */
+  /* The same green at the weight a tinted strip can take: the verdict banner
+     wears it when the two sides agree, opposite the red at that same weight. */
   --accent-action-wash: rgba(63, 185, 80, 0.14);
-  /* And the purple at that same weight, so a pointer over Randomize is
-     answered as quietly as a pointer over Run. */
-  --accent-activity-wash: rgba(163, 113, 247, 0.14);
   --danger: #ff7b72;
   /* The red at the weight the other washes carry, so a split verdict is tinted
      as quietly as an agreeing one. */
@@ -265,62 +262,88 @@ button.accent-llm:not(:disabled) {
   color: var(--accent-llm);
 }
 
-button.accent-jev:not(:disabled) {
-  border-color: var(--accent-jev);
-  color: var(--accent-jev);
-}
-
-/* The two buttons on that row, each in an accent that belongs to no judge.
+/* The three buttons on that row, each wearing its own accent as a fill.
  *
- * Run keeps the green. Randomize takes the waiting purple, because the box it
- * is about to rewrite lights that same purple while the call is out: the button
- * and the border it starts are then one colour rather than two, and the row
- * still spends neither of the legend's hues on its loudest controls.
+ * Run keeps the green and Randomize the waiting purple, for the reasons the
+ * palette above records; Re-ask Jev keeps the blue of the side it asks again,
+ * since putting the same question back to that one judge is the only thing it
+ * does. What changed is the body. Panel black under a coloured hairline made
+ * the row read as three pieces of chrome that happened to be outlined, and a
+ * visitor scanning it met the three shapes before any of the colours. A
+ * gradient of the accent gives each control a body in its own hue, and the
+ * edge that gradient fades out of is the edge it always had.
  *
- * The shade each one wears is carried in a local custom property, so the four
- * rules that follow are written once and a third accented button would be two
- * lines rather than another copy of them. The edge is set without the
- * :not(:disabled) guard the two above carry, so a Run that has not been given a
- * descriptor yet keeps its green rather than dropping to bare chrome: the
- * dimmed ink and the shared disabled opacity already say it cannot be pressed,
- * and a button that changes family as well as weight reads as a different
- * control rather than the same one waiting.
+ * The shade is named once per button in a local custom property and mixed into
+ * the panel by the rules below, so a fourth accented button is two lines
+ * rather than another copy of the gradient. Mixing against --panel rather than
+ * floating a translucent accent over it keeps every fill opaque, so a button
+ * is the same colour wherever the row is drawn instead of drifting with
+ * whatever ends up behind it.
  */
 button.accent-action {
   --accent-button: var(--accent-action);
-  --accent-button-wash: var(--accent-action-wash);
 }
 
 button.accent-activity {
   --accent-button: var(--accent-activity);
-  --accent-button-wash: var(--accent-activity-wash);
+}
+
+button.accent-jev {
+  --accent-button: var(--accent-jev);
 }
 
 button.accent-action,
-button.accent-activity {
+button.accent-activity,
+button.accent-jev {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-button) 34%, var(--panel)),
+    color-mix(in srgb, var(--accent-button) 10%, var(--panel))
+  );
   border-color: var(--accent-button);
 }
 
+/* The label hands its accent over to the fill and takes the page's ink. An
+   accent-coloured word on an accent-tinted body is the one pairing this
+   gradient cannot carry: the purple clears about four to one against its own
+   tint and no more, and these are the three controls a visitor reaches for
+   first. Ink clears better than seven to one on all three, and the hue still
+   says which button this is — from behind the word rather than in it. */
 button.accent-action:not(:disabled),
-button.accent-activity:not(:disabled) {
-  color: var(--accent-button);
+button.accent-activity:not(:disabled),
+button.accent-jev:not(:disabled) {
+  color: var(--ink);
 }
 
 /* Hover has to be stated here rather than left to the page-wide rule: that one
-   greys the edge, which on these two would answer a pointer by taking the
-   colour away. A wash inside the same border says the same thing forwards. */
+   greys the edge, which on these three would answer a pointer by taking the
+   colour away. The flat wash that used to answer it has nothing to sit on now,
+   so the pointer lifts the fill instead — the same gradient, a few points
+   richer at both ends. */
 button.accent-action:hover:not(:disabled),
-button.accent-activity:hover:not(:disabled) {
-  background: var(--accent-button-wash);
+button.accent-activity:hover:not(:disabled),
+button.accent-jev:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-button) 48%, var(--panel)),
+    color-mix(in srgb, var(--accent-button) 20%, var(--panel))
+  );
   border-color: var(--accent-button);
 }
 
-/* And the ring, for the same reason neither fill is blue: the page-wide focus
-   outline is the Jev blue, which would put a legend colour back on the one row
-   this change is clearing it off. Colour only — the width and offset below are
-   the page's and stay shared. */
+/* Disabled is left to the page-wide rule on purpose. Run and Re-ask Jev open
+   that way, and dropping the fill while they wait would mean two black buttons
+   that grow a colour once they can be pressed — a control changing family
+   rather than weight. The shared opacity and the dimmed label already say
+   unpressable; the tint underneath goes on saying which control it is. */
+
+/* And the ring, for the same reason neither of the other two fills is blue:
+   the page-wide focus outline is the Jev blue, which on Run or Randomize would
+   put a legend colour back on a row that spends neither. Colour only — the
+   width and offset below are the page's and stay shared. */
 button.accent-action:focus-visible,
-button.accent-activity:focus-visible {
+button.accent-activity:focus-visible,
+button.accent-jev:focus-visible {
   outline-color: var(--accent-button);
 }
 
