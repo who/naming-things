@@ -783,11 +783,12 @@ button.accent-jev:focus-visible {
    A tick is the one mark that means chosen without being read. */
 .pick-check {
   align-items: center;
-  /* Opaque, and ringed in the page's own colour: where the pair overlap, the
-     one in front has to end somewhere the eye can find, or two judges on one
-     name read as a single smudged badge. */
-  background: var(--bg);
-  border: 1px solid currentColor;
+  /* Filled in the judge's own accent, and ringed in the page's colour: a solid
+     disc is what a visitor reads as chosen without stopping to look at it, and
+     where the pair overlap the one in front still has to end somewhere the eye
+     can find, or two judges on one name read as a single smudged badge. No
+     border: an outline in the colour already under it would draw nothing. */
+  background: currentColor;
   border-radius: 50%;
   box-shadow: 0 0 0 2px var(--bg);
   display: flex;
@@ -809,18 +810,22 @@ button.accent-jev:focus-visible {
   width: 62%;
 }
 
-/* A stroked path rather than a filled one, so the tick stays the same weight
-   as the ring around it at every size the circle is asked to be. */
+/* White on the accent under it, and stroked rather than filled, so the tick
+   keeps one weight at every size the circle is asked to be. The colour is
+   literal rather than a token because it is the ink of a badge that is always
+   one of the two accents, never the page's ink on the page's background: a
+   tick drawn in `--bg` would be a hole in the disc rather than a mark on it,
+   and would follow the page if the page were ever lightened. */
 .pick-check path {
   fill: none;
-  stroke: currentColor;
+  stroke: #fff;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
 }
 
-/* The legend's two accents, taken once each: the ring and the tick inside it
-   are both drawn in the current colour, so a judge is one declaration. */
+/* The legend's two accents, taken once each: the disc is filled from the
+   current colour, so a judge is still one declaration. */
 .pick-check-llm {
   color: var(--accent-llm);
 }
