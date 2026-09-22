@@ -618,8 +618,15 @@ button.accent-jev:focus-visible {
   /* One template, shared by every row. Each row draws its own three columns
      instead of sharing the container's, because a row has to stay a single box
      for the pick marks to be drawn from its edge — writing the widths once here
-     is what keeps those independent rows reading as columns. */
-  --candidate-columns: minmax(7rem, 1.1fr) minmax(4.5rem, auto) minmax(0, 2.6fr);
+     is what keeps those independent rows reading as columns.
+
+     Every track is a fraction of the width rather than a fit to what sits in
+     it, for the same reason: a row sizing its middle column to its own type
+     hint would put that column somewhere different in every row, and one
+     heading could only ever be over one of them. Fractions resolve to the same
+     three widths in the head and in all ten rows, whatever the types are
+     called. */
+  --candidate-columns: minmax(7rem, 1.1fr) minmax(4.5rem, 0.6fr) minmax(0, 2.6fr);
   /* One lap of a pick's orb. Both accents take their speed from it, so the
      chase further down is a fraction of a lap rather than a second duration
      that has to be kept in step with this one by hand. */
@@ -642,6 +649,13 @@ button.accent-jev:focus-visible {
    identifiers is only a column once something at the top says what it is. */
 .candidate-head {
   background: var(--bg);
+  /* Every row spends a pixel of each edge on its border, so the head spends one
+     too. Without it the head has two more pixels of width to lay its columns
+     across than the rows do, and each heading sits a little off the column it
+     names. Transparent because the head is a label and not a box: it is the
+     row's box model borrowed, not a line anyone should see. A picked row only
+     recolours that border, so the heading it belongs to never moves. */
+  border: 1px solid transparent;
   color: var(--ink-dim);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
@@ -1066,9 +1080,11 @@ button.accent-jev:focus-visible {
   }
 
   /* Two columns on a phone, with the case for the name under them. Three across
-     a narrow screen would leave the prose a channel four words wide. */
+     a narrow screen would leave the prose a channel four words wide. The type
+     column stays a fraction here as well, so the pair of headings is over the
+     pair of columns on a phone too. */
   .candidate-grid {
-    --candidate-columns: minmax(0, 1fr) auto;
+    --candidate-columns: minmax(0, 1fr) minmax(4.5rem, 0.5fr);
   }
 
   .candidate-column:last-child,
